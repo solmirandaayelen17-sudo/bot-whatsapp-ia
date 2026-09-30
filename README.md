@@ -1,12 +1,65 @@
-# Bot de WhatsApp con IA para negocios (prototipo multi-empresa)
+# Bot de WhatsApp con IA para negocios
 
-Un solo sistema que atiende el WhatsApp de **varios negocios a la vez**. Responde consultas con los datos reales de cada uno (precios, stock, horarios), toma pedidos y le pasa la charla a una persona cuando hace falta.
+Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta con los precios y el stock reales de la planilla de cada uno, toma pedidos y le pasa la charla a una persona cuando hace falta.
 
-Para sumar un cliente nuevo no se toca el código: agregás **un archivo de configuración** y **una planilla**.
+![Node.js](https://img.shields.io/badge/Node.js-20%2B-5FA04E?logo=nodedotjs&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-LangGraph-1C3C3C?logo=langchain&logoColor=white)
+![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
+![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
+![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
+![Pruebas](https://img.shields.io/badge/pruebas-26%20OK-brightgreen)
 
-- **Cerebro:** un agente de IA armado con [LangGraph](https://langchain-ai.github.io/langgraphjs/) sobre Gemini.
-- **Datos del negocio:** Google Sheets (o archivos CSV para probar sin configurar nada).
-- **Conexión con WhatsApp:** la API oficial de Meta (Cloud API), sin riesgo de bloqueo por usar un bot.
+## Demo
+
+![Chat de prueba: el cliente pregunta cuánto sale la cubierta para su auto y el bot responde con la medida, el precio y el stock de la planilla](docs/demo-consulta.png)
+
+El cliente pregunta por **su auto**, no por la medida, y el bot encuentra la cubierta en la planilla. A mitad de la charla cambié el precio en Google Sheets (de $95.000 a $99.000) y el bot ya respondió con el precio nuevo.
+
+![Chat de prueba: el bot cotiza 2 cubiertas y anota el pedido recién cuando el cliente confirma](docs/demo-pedido.png)
+
+El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cuando el cliente confirma en otro mensaje**, lo anota como una fila nueva en la planilla, con su código de pedido.
+
+> Las capturas son del chat de prueba en la terminal, que usa el mismo "cerebro" que la versión de WhatsApp. Los asteriscos son la negrita de WhatsApp. La gomería y sus productos son de ejemplo.
+
+## Lo más importante
+
+- **Agente de IA con herramientas.** No es un menú de "marcá 1, 2 o 3": entiende lenguaje natural y *hace cosas*, como buscar productos, cotizar, anotar pedidos o derivar a una persona.
+- **La IA decide, el código valida.** El código controla que el producto exista y que haya stock, y calcula el total. La IA no puede inventar precios, vender lo que no hay ni anotar un pedido sin que el cliente confirme.
+- **Multi-empresa.** Sumar un negocio es agregar un archivo JSON y una planilla, sin tocar el código.
+- **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
+- **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
+- **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
+- **26 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+
+## Tecnologías
+
+| Parte | Tecnología |
+|---|---|
+| Lenguaje | JavaScript con Node.js |
+| Agente de IA | LangChain v1 (`createAgent`, sobre LangGraph) |
+| Modelo | Google Gemini, con modelo de respaldo |
+| Datos del negocio | Google Sheets API (o archivos CSV para probar) |
+| WhatsApp | WhatsApp Cloud API oficial de Meta, con webhook en Express |
+| Validación de datos | Zod |
+| Pruebas | `node:test` |
+
+## Estado
+
+- **Funciona de punta a punta** en el chat de prueba, leyendo y escribiendo en Google Sheets.
+- **En curso:** la conexión al número de prueba de WhatsApp. El código del webhook ya está hecho y tiene pruebas.
+- Lo que sigue está más abajo, en *Qué NO hace todavía*.
+
+## Autora
+
+**Sol Ayelen Miranda**, estudiante de Ingeniería en Inteligencia Artificial en la Universidad de Palermo (Argentina).
+
+<details>
+<summary><b>English summary</b></summary>
+
+A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
+
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (26 tests using a fake LLM). The rest of the documentation is in Spanish.
+</details>
 
 ---
 
@@ -34,7 +87,7 @@ flowchart LR
 
 ## Por qué está armado así
 
-Cada decisión resuelve un problema concreto. Esto es lo que te van a preguntar en una entrevista o un cliente.
+Cada decisión resuelve un problema concreto.
 
 **1. Un código, muchas empresas.** Lo que cambia de un negocio a otro (nombre, horarios, tono, planilla, número de WhatsApp, herramientas activas) vive en `empresas/<id>.json`. Sumar un cliente te lleva minutos, y cuando arreglás un error o agregás una función, lo tienen todos.
 
@@ -76,6 +129,7 @@ bot-whatsapp-ia/
 │   └── gomeria-demo.json
 ├── datos/                     ← planillas locales (CSV) para probar sin Google
 │   └── gomeria-demo/productos.csv
+├── docs/                      ← capturas de la demo
 ├── src/
 │   ├── config/empresas.js     ← lee y valida la configuración de cada empresa
 │   ├── datos/                 ← de dónde salen los datos (CSV local o Google Sheets)
@@ -88,7 +142,8 @@ bot-whatsapp-ia/
 │   ├── canales/
 │   │   ├── consola.js         ← chat de prueba en la terminal
 │   │   └── whatsapp.js        ← webhook y envío por la API oficial
-│   └── servidor.js            ← servidor para WhatsApp
+│   ├── servidor.js            ← servidor para WhatsApp
+│   └── diagnostico.js         ← prueba Gemini y las planillas y dice qué falla
 └── test/                      ← pruebas automáticas (npm test)
 ```
 
@@ -96,12 +151,14 @@ bot-whatsapp-ia/
 
 ## Puesta en marcha
 
-Necesitás **Node.js 20 o más nuevo**. En tu WSL con Ubuntu: `node -v` para ver la versión.
+Necesitás **Node.js 20 o más nuevo** (con `node -v` ves la versión) y **Git**.
 
 ### Paso 1: chatear con el bot en la terminal (10 minutos, gratis)
 
-1. Descomprimí el proyecto, abrí la carpeta en VS Code e instalá las dependencias:
+1. Descargá el proyecto, entrá a la carpeta e instalá las dependencias:
    ```bash
+   git clone https://github.com/solmirandaayelen17-sudo/bot-whatsapp-ia.git
+   cd bot-whatsapp-ia
    npm install
    ```
 2. Copiá el archivo de ejemplo de variables:
@@ -113,7 +170,11 @@ Necesitás **Node.js 20 o más nuevo**. En tu WSL con Ubuntu: `node -v` para ver
    ```bash
    npm test
    ```
-5. Chateá con la gomería de ejemplo:
+5. El ejemplo viene conectado a mi planilla de Google, que no es pública. Para probar sin Google, abrí `empresas/gomeria-demo.json` y cambiá la parte de `datos` por esta, que usa el CSV de ejemplo:
+   ```json
+   "datos": { "tipo": "local", "carpeta": "datos/gomeria-demo" }
+   ```
+6. Chateá con la gomería de ejemplo:
    ```bash
    npm run consola -- gomeria-demo
    ```
@@ -166,7 +227,7 @@ Necesitás **Node.js 20 o más nuevo**. En tu WSL con Ubuntu: `node -v` para ver
    - Suscribite al campo **messages**
 8. Escribile desde tu celular al número de prueba. El bot te contesta.
 
-> El token temporal vence a las 24 horas. Para algo estable, se crea un **usuario del sistema** con token permanente en el administrador comercial de Meta. Eso lo hacemos cuando pases a un cliente real.
+> El token temporal vence a las 24 horas. Para algo estable, se crea un **usuario del sistema** con token permanente en el administrador comercial de Meta. Eso se configura al pasar a un cliente real.
 
 ---
 
@@ -199,14 +260,14 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 | **Turnos** (Google Calendar) | Es el paquete "Vende y agenda". |
 | **Reactivar el bot cuando el dueño responde** | Con la coexistencia, Meta avisa cuando el dueño escribe desde su celular. Se puede usar para pausar o reanudar solo. |
 | **Cobros** (Mercado Pago) | Es el paquete "Todo conectado". |
-| **Servidor en la nube** | Hoy corre en tu compu: si la apagás, el bot se apaga. |
-| **Alta de clientes con Embedded Signup** | Cuando seas Tech Provider, cada negocio conecta su número con un botón. |
+| **Servidor en la nube** | Hoy corre en una compu: si se apaga, el bot se apaga. |
+| **Alta de clientes con Embedded Signup** | Registrándose como Tech Provider, cada negocio conecta su número con un botón. |
 
 ---
 
 ## Costos
 
-- **Probar:** $0. Usás Gemini gratis con datos inventados, el número de prueba de Meta y tu compu.
+- **Probar:** $0. Se usa Gemini gratis con datos inventados, el número de prueba de Meta y una compu común.
 - **Con clientes reales:**
   - Gemini pago, que es barato y no usa los datos de tus clientes para entrenar.
   - Un servidor.
@@ -220,6 +281,6 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 |---|---|
 | `npm install` | Instala las dependencias |
 | `npm test` | Corre las pruebas automáticas |
-| `npm run diagnostico` | Prueba la conexión con Gemini paso a paso y dice qué falla |
+| `npm run diagnostico` | Prueba Gemini y las planillas paso a paso y dice qué falla |
 | `npm run consola -- <id>` | Chat de prueba en la terminal (`/nuevo`, `/reanudar`, `/salir`) |
 | `npm run servidor` | Levanta el servidor para WhatsApp |
