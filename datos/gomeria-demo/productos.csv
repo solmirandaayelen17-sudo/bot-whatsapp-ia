@@ -1,0 +1,9 @@
+codigo,nombre,categoria,precio,stock,descripcion
+CUB-17565R14,Cubierta 175/65 R14,cubiertas,"$ 95.000",4,"Para autos chicos (Gol Trend, Corsa, Fiesta). Marca de ejemplo."
+CUB-18565R15,Cubierta 185/65 R15,cubiertas,"$ 112.000",6,"Para autos medianos (Etios, Onix, Cronos). Marca de ejemplo."
+CUB-19555R16,Cubierta 195/55 R16,cubiertas,"$ 138.000",0,"Para autos medianos con llanta 16. Sin stock por ahora."
+CUB-20555R16,Cubierta 205/55 R16,cubiertas,"$ 145.000",2,"Para sedanes (Corolla, Cruze, Vento). Marca de ejemplo."
+CUB-26570R16,Cubierta 265/70 R16 AT,cubiertas,"$ 265.000",4,"Todo terreno para camionetas (Hilux, Ranger, Amarok)."
+COL-BAL,Colocación y balanceo,servicios,"$ 9.000",,"Precio por rueda. Incluye válvula nueva."
+ALI,Alineación,servicios,"$ 22.000",,"Alineación computada del tren delantero."
+PAR-CAM,Arreglo de pinchadura,servicios,"$ 8.000",,"Parche o tarugo según el caso. Se hace en el momento."

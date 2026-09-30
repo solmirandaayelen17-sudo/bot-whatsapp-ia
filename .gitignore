@@ -1,0 +1,6 @@
+node_modules/
+.env
+credenciales/
+# Pedidos y derivaciones que genera el modo local (datos de prueba)
+datos/*/pedidos.csv
+datos/*/derivaciones.csv

@@ -1,0 +1,34 @@
+{
+  "id": "gomeria-demo",
+  "nombre": "Gomería La Demo",
+  "rubro": "gomería y venta de cubiertas (negocio de ejemplo para demos)",
+  "tono": "cercano y claro, en español rioplatense (voseo), sin exagerar con la informalidad",
+  "negocio": {
+    "direccion": "Av. Ejemplo 123 (dirección de ejemplo)",
+    "horarios": "Lunes a viernes de 8:30 a 18:00 y sábados de 9:00 a 13:00. Domingos cerrado.",
+    "formasDePago": ["efectivo", "transferencia", "tarjeta de débito", "Mercado Pago"],
+    "envios": "No hacemos envíos de cubiertas; se colocan en el local.",
+    "preguntasFrecuentes": [
+      {
+        "pregunta": "¿Hace falta turno para colocar cubiertas?",
+        "respuesta": "Conviene reservar, pero si hay lugar atendemos por orden de llegada."
+      },
+      {
+        "pregunta": "¿La colocación está incluida?",
+        "respuesta": "No. La colocación con balanceo se cobra aparte (servicio COL-BAL, precio por rueda)."
+      }
+    ]
+  },
+  "whatsapp": {
+    "phoneNumberId": "",
+    "tokenEnv": "WHATSAPP_TOKEN"
+  },
+  "datos": {
+    "tipo": "google-sheets",
+    "spreadsheetId": "17IGMDLHtTOr-kQ_DdP-OPR_hZAKSvr9ZQ0dhn4FUqgw"
+  },
+  "herramientas": ["buscar_productos", "tomar_pedidos", "derivar_a_humano"],
+  "derivacion": {
+    "pausaMinutos": 120
+  }
+}
