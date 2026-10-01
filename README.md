@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-48%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-53%20OK-brightgreen)
 
 ## Demo
 
@@ -31,7 +31,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **48 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **53 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -54,6 +54,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **Cobra con link de Mercado Pago** al confirmar el pedido (probado en modo prueba, sin plata real).
 - **Entiende notas de voz:** descarga el audio de WhatsApp, lo transcribe con Gemini y responde. En la demo se prueba con el micrófono.
 - **Demo para clientes:** un chat con forma de celular en el navegador, conectado al bot real a través del mismo webhook (`npm run demo`).
+- **Demo pública lista para internet:** cada visitante tiene su propia charla, hay límites de mensajes y los pedidos de prueba no tocan la planilla. Se publica en Railway (`npm start` con `DEMO_PUBLICA=1`).
 - **Pendiente:** mandar y recibir mensajes reales por WhatsApp. Meta pide verificar el negocio antes de habilitar el envío, y eso se hace con el primer cliente.
 - Lo que sigue está más abajo, en *Qué NO hace todavía*.
 
@@ -66,7 +67,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (48 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (53 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -145,7 +146,7 @@ bot-whatsapp-ia/
 ├── docs/                      ← capturas de la demo
 ├── src/
 │   ├── config/empresas.js     ← lee y valida la configuración de cada empresa
-│   ├── datos/                 ← de dónde salen los datos (CSV local o Google Sheets)
+│   ├── datos/                 ← de dónde salen los datos (CSV local, Google Sheets o solo lectura para la demo pública)
 │   ├── agente/
 │   │   ├── prompt.js          ← las instrucciones y reglas de la IA
 │   │   ├── herramientas.js    ← lo que el bot puede HACER
@@ -162,7 +163,8 @@ bot-whatsapp-ia/
 │   │   └── demoWeb.js / .html ← chat con forma de celular para mostrar
 │   ├── servidor.js            ← servidor para WhatsApp
 │   ├── simulador.js           ← chat de prueba que pasa por el webhook
-│   ├── demo.js                ← demo en el navegador para mostrarle a un cliente
+│   ├── demo.js                ← demo en el navegador (en tu compu o pública en internet)
+│   ├── copiarLlave.js         ← copia la llave de Google para pegarla en el servidor
 │   └── diagnostico.js         ← prueba Gemini y las planillas y dice qué falla
 └── test/                      ← pruebas automáticas (npm test)
 ```
@@ -248,7 +250,31 @@ Escribí como si fueras un cliente. Además tenés estos comandos:
 npm run demo -- gomeria-demo
 ```
 
-Se abre <http://localhost:3001> con un chat con forma de celular. Cada mensaje pasa por el simulador y entra al webhook del bot, así que contesta lo mismo que contestaría por WhatsApp, con la planilla real. Con el botón del **micrófono** mandás una nota de voz: el bot la escucha, muestra lo que entendió y responde. Abajo del celular están **Nuevo cliente** (empieza otra charla) y **Reactivar el bot** (si derivó a una persona). Sirve para mostrarlo en persona o grabar un video. La página solo se puede abrir desde tu compu.
+Se abre <http://localhost:3001> con un chat con forma de celular. Cada mensaje pasa por el simulador y entra al webhook del bot, así que contesta lo mismo que contestaría por WhatsApp, con la planilla real. Con el botón del **micrófono** mandás una nota de voz: el bot la escucha, muestra lo que entendió y responde. Abajo del celular están **Nuevo cliente** (empieza otra charla) y **Reactivar el bot** (si derivó a una persona). Sirve para mostrarlo en persona o grabar un video. Así, la página solo se puede abrir desde tu compu. Para que cualquiera la pruebe desde un link, publicala (abajo).
+
+### Publicar la demo en internet (Railway)
+
+Publicada, la demo cambia sola a **modo público**: cada visitante tiene su propia charla, hay límites de mensajes (por charla, por persona por minuto y por día, y en total por día) para cuidar la cuota de Gemini, y los pedidos de prueba **no se anotan** en la planilla (los precios y el stock sí se leen de verdad). Railway la arranca con `npm start`.
+
+1. Subí los últimos cambios a GitHub (`git add -A`, `git commit -m "..."`, `git push`).
+2. En [Railway](https://railway.com), **Nuevo proyecto → Repositorio GitHub**. Autorizá a Railway a ver tu repositorio y elegí `bot-whatsapp-ia`.
+3. En el servicio que se crea, pestaña **Variables**, cargá estas variables (los valores salen de tu `.env`):
+
+   | Variable | Valor |
+   |---|---|
+   | `DEMO_PUBLICA` | `1` |
+   | `DEMO_EMPRESA` | `gomeria-demo` |
+   | `GOOGLE_API_KEY` | tu clave de Gemini |
+   | `GEMINI_MODEL` y `GEMINI_MODEL_RESPALDO` | los mismos de tu `.env` |
+   | `GOOGLE_CREDENTIALS_JSON` | la llave de la cuenta de servicio: corré `npm run copiar-llave` y pegala con Ctrl + V |
+   | `MERCADOPAGO_ACCESS_TOKEN` | el de prueba (opcional: sin él, el bot dice que el negocio manda cómo pagar) |
+   | `SIREN_CONTACTO_WHATSAPP` | tu WhatsApp, solo números (opcional: activa "Agendar demostración") |
+
+   No cargues `GOOGLE_APPLICATION_CREDENTIALS` (en el servidor no hay archivos) ni `PORT` (Railway lo pone solo).
+4. En **Settings → Networking**, tocá **Generate Domain**. Te da un link tipo `https://algo.up.railway.app`: esa es tu demo pública.
+5. Si querés cambiar los límites, agregá `DEMO_LIMITE_POR_CHARLA` (25), `DEMO_LIMITE_POR_MINUTO` (10), `DEMO_LIMITE_POR_PERSONA_POR_DIA` (60) o `DEMO_LIMITE_POR_DIA` (400).
+
+> En el plan gratis de Gemini, Google puede usar lo que se escribe para mejorar sus productos. Para una demo con datos inventados está bien; con clientes reales, usá Gemini pago.
 
 ### Paso 3: conectarlo a WhatsApp con el número de prueba de Meta (30 minutos, gratis)
 
@@ -328,7 +354,7 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 | **Turnos** (Google Calendar) | Es el paquete "Vende y agenda". |
 | **Reactivar el bot cuando el dueño responde** | Con la coexistencia, Meta avisa cuando el dueño escribe desde su celular. Se puede usar para pausar o reanudar solo. |
 | **Avisar cuando se pagó** (notificaciones de Mercado Pago) | Hoy el link se manda y queda en la planilla, pero el pago se controla en la cuenta de Mercado Pago. Con las notificaciones, el pedido pasaría solo a "pagado". |
-| **Servidor en la nube** | Hoy corre en una compu: si se apaga, el bot se apaga. |
+| **El bot de WhatsApp en la nube** | La demo ya se publica en Railway. Falta sumar el servidor del bot (`npm run servidor`) como otro servicio, cuando Meta habilite el número de un cliente. |
 | **Alta de clientes con Embedded Signup** | Registrándose como Tech Provider, cada negocio conecta su número con un botón. |
 
 ---
@@ -353,4 +379,6 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 | `npm run consola -- <id>` | Chat de prueba en la terminal (`/nuevo`, `/reanudar`, `/salir`) |
 | `npm run simulador -- <id>` | Chat de prueba que pasa por el webhook, como si fuera WhatsApp (`/audio <archivo>`, `/repetido`, `/trucho`, `/nuevo`, `/reanudar`, `/salir`) |
 | `npm run demo -- <id>` | Demo en el navegador: chat con forma de celular y micrófono, conectado al bot |
+| `npm start` | La demo en modo público (la usa Railway, con `DEMO_PUBLICA=1`) |
+| `npm run copiar-llave` | Copia la llave de Google en una línea, para pegarla en Railway |
 | `npm run servidor` | Levanta el servidor para WhatsApp |

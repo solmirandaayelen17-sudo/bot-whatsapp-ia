@@ -26,17 +26,20 @@ export async function crearSimulador({
   const phoneNumberId = empresa.whatsapp?.phoneNumberId || `SIMULADO-${empresa.id}`;
 
   let conversacion = 0;
-  let pendiente = null; // lo que está esperando la respuesta del mensaje actual
   let ultimoCuerpo = null;
-  let ultimaTranscripcion = null;
+  // POR QUÉ por teléfono: en la demo pública escriben varias personas a la vez.
+  // Cada una espera SU respuesta, sin mezclarse con las de otros.
+  const pendientes = new Map(); // teléfono -> función que recibe la respuesta
+  const transcripciones = new Map(); // teléfono -> lo que el bot entendió del último audio
   const audios = new Map(); // los audios "subidos a Meta", por id, para que el bot los descargue
 
   const telefonoActual = () => String(BigInt(telefonoBase) + BigInt(conversacion));
 
-  function entregar(resultado) {
-    const p = pendiente;
-    pendiente = null;
-    const completo = ultimaTranscripcion ? { ...resultado, transcripcion: ultimaTranscripcion } : resultado;
+  function entregar(telefono, resultado) {
+    const p = pendientes.get(telefono);
+    pendientes.delete(telefono);
+    const transcripcion = transcripciones.get(telefono);
+    const completo = transcripcion ? { ...resultado, transcripcion } : resultado;
     if (p) p(completo);
     else alLlegarTarde(completo);
   }
@@ -51,20 +54,20 @@ export async function crearSimulador({
 
   // Reemplaza al envío real a Meta: guarda lo que el bot iba a mandar.
   async function enviarTexto({ para, texto }) {
-    entregar({ tipo: "respuesta", para: normalizarDestino(para), texto });
+    entregar(para, { tipo: "respuesta", para: normalizarDestino(para), texto });
   }
 
   // Envuelve al procesador para enterarnos si el bot decidió no contestar
   // (por ejemplo, porque derivó la charla a una persona).
   async function procesarEspiado(datos) {
-    ultimaTranscripcion = datos.transcripcion ?? null;
+    if (datos.transcripcion) transcripciones.set(datos.telefono, datos.transcripcion);
     try {
       const respuesta = await procesar(datos);
-      if (respuesta === null) entregar({ tipo: "pausa" });
-      else if (!respuesta) entregar({ tipo: "sin-respuesta" });
+      if (respuesta === null) entregar(datos.telefono, { tipo: "pausa" });
+      else if (!respuesta) entregar(datos.telefono, { tipo: "sin-respuesta" });
       return respuesta;
     } catch (error) {
-      entregar({ tipo: "error", error });
+      entregar(datos.telefono, { tipo: "error", error });
       throw error;
     }
   }
@@ -96,13 +99,14 @@ export async function crearSimulador({
   }
 
   // Manda el cuerpo y espera la respuesta del bot (o se rinde a los esperaMs).
-  async function mandarYEsperar(cuerpo, firma, esperaMs) {
+  async function mandarYEsperar(cuerpo, firma, esperaMs, telefono) {
+    transcripciones.delete(telefono);
     const respuesta = new Promise((ok) => {
-      pendiente = ok;
+      pendientes.set(telefono, ok);
     });
     const estado = await postear(cuerpo, firma);
     if (estado !== 200) {
-      pendiente = null;
+      pendientes.delete(telefono);
       return { estado, tipo: "rechazado" };
     }
     let reloj;
@@ -111,7 +115,7 @@ export async function crearSimulador({
     });
     const resultado = await Promise.race([respuesta, tiempoAgotado]);
     clearTimeout(reloj); // si no, el programa queda esperando aunque ya haya respuesta
-    if (resultado.tipo === "sin-respuesta") pendiente = null;
+    if (resultado.tipo === "sin-respuesta") pendientes.delete(telefono);
     return { estado, ...resultado };
   }
 
@@ -129,32 +133,34 @@ export async function crearSimulador({
     },
 
     // Un cliente escribe (texto) o manda una nota de voz (tipo "audio", con
-    // audio: { datos: Buffer, mimeType }).
-    async mandar({ texto, tipo = "text", audio = null }) {
-      ultimaTranscripcion = null;
+    // audio: { datos: Buffer, mimeType }). "de" es su teléfono; si no se pasa,
+    // es el de la conversación actual.
+    async mandar({ texto, tipo = "text", audio = null, de = telefonoActual() }) {
       let datosAudio = {};
       if (tipo === "audio" && audio?.datos) {
         const id = "audio-" + crypto.randomBytes(6).toString("hex");
         audios.set(id, { datos: audio.datos, mimeType: audio.mimeType });
         datosAudio = { id, mimeType: audio.mimeType };
       }
-      const aviso = armarAvisoDeMeta({ phoneNumberId, de: telefonoActual(), nombre, texto, tipo, audio: datosAudio });
+      const aviso = armarAvisoDeMeta({ phoneNumberId, de, nombre, texto, tipo, audio: datosAudio });
       const cuerpo = JSON.stringify(aviso);
-      ultimoCuerpo = cuerpo;
-      return mandarYEsperar(cuerpo, firmarCuerpo(cuerpo, appSecret), esperaMaximaMs);
+      ultimoCuerpo = { cuerpo, de };
+      return mandarYEsperar(cuerpo, firmarCuerpo(cuerpo, appSecret), esperaMaximaMs, de);
     },
 
     // Meta a veces reenvía el mismo aviso. El bot no tiene que contestar dos veces.
     async repetirUltimo(esperaMs = 2000) {
       if (!ultimoCuerpo) return null;
-      return mandarYEsperar(ultimoCuerpo, firmarCuerpo(ultimoCuerpo, appSecret), esperaMs);
+      const { cuerpo, de } = ultimoCuerpo;
+      return mandarYEsperar(cuerpo, firmarCuerpo(cuerpo, appSecret), esperaMs, de);
     },
 
     // Alguien que NO es Meta intenta mandarle un mensaje al bot (firma falsa).
     async mandarTrucho(texto, esperaMs = 2000) {
-      const aviso = armarAvisoDeMeta({ phoneNumberId, de: telefonoActual(), nombre, texto });
+      const de = telefonoActual();
+      const aviso = armarAvisoDeMeta({ phoneNumberId, de, nombre, texto });
       const cuerpo = JSON.stringify(aviso);
-      return mandarYEsperar(cuerpo, firmarCuerpo(cuerpo, "una-clave-que-no-es-la-de-meta"), esperaMs);
+      return mandarYEsperar(cuerpo, firmarCuerpo(cuerpo, "una-clave-que-no-es-la-de-meta"), esperaMs, de);
     },
 
     nuevaConversacion() {

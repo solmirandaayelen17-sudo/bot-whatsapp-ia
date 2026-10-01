@@ -13,12 +13,28 @@ import { ENCABEZADOS, normalizarProducto } from "./productos.js";
 
 const SEGUNDOS_CACHE = 60;
 
+// La llave de la cuenta de servicio (nunca se sube a GitHub) puede venir:
+// - En tu compu: como archivo, con su ruta en GOOGLE_APPLICATION_CREDENTIALS.
+// - En un servidor (Railway): pegada entera en la variable GOOGLE_CREDENTIALS_JSON,
+//   porque ahí no hay archivos privados.
+export function opcionesDeAutenticacion(entorno = process.env) {
+  const scopes = ["https://www.googleapis.com/auth/spreadsheets"];
+  const json = entorno.GOOGLE_CREDENTIALS_JSON?.trim();
+  if (!json) return { scopes };
+  let credentials;
+  try {
+    credentials = JSON.parse(json);
+  } catch {
+    throw new Error("GOOGLE_CREDENTIALS_JSON no es un JSON válido: pegá el contenido completo del archivo de la cuenta de servicio.");
+  }
+  if (!credentials.client_email || !credentials.private_key) {
+    throw new Error("GOOGLE_CREDENTIALS_JSON no parece la llave de una cuenta de servicio (falta client_email o private_key).");
+  }
+  return { scopes, credentials };
+}
+
 export function crearFuenteGoogleSheets(spreadsheetId) {
-  // Lee la llave de la cuenta de servicio desde la ruta que indica
-  // GOOGLE_APPLICATION_CREDENTIALS en el .env (nunca se sube a GitHub).
-  const auth = new google.auth.GoogleAuth({
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
+  const auth = new google.auth.GoogleAuth(opcionesDeAutenticacion());
   const sheets = google.sheets({ version: "v4", auth });
 
   // POR QUÉ el caché: si entran 20 mensajes en un minuto no hace falta leer la

@@ -4,187 +4,381 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo del asistente · Siren IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap">
 <style>
+  /* Diseño hecho en Google Stitch para Siren IA. El celular imita a WhatsApp a propósito. */
   :root {
-    --fondo-1: #14162b;
-    --fondo-2: #1f2350;
-    --acento: #4fd1b5;
-    --acento-osc: #179b80;
-    --texto-claro: #eef0ff;
-    --texto-suave: #a9aed6;
-    --chat-fondo: #efeae2;
-    --burbuja-bot: #ffffff;
-    --burbuja-cliente: #d8f5ec;
-    --tinta: #1d2230;
-    --tinta-suave: #667085;
+    --fondo: #080b12;
+    --noche: #0a101d;
+    --teal: #06d6a0;
+    --glow: #2dd4bf;
+    --champagne: #eddcc8;
+    --texto: #f1f5f9;
+    --texto-2: #cbd5e1;
+    --texto-3: #94a3b8;
+    --texto-4: #64748b;
+    --linea: rgba(255, 255, 255, .06);
+    --serif: "Cormorant Garamond", Georgia, serif;
+    --sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    /* WhatsApp */
+    --wa-verde: #008069;
+    --wa-mic: #00a884;
+    --wa-chat: #efeae2;
+    --wa-saliente: #d9fdd3;
+    --wa-barra: #f0f2f5;
+    --tinta: #111b21;
+    --tinta-suave: #667781;
   }
   * { box-sizing: border-box; margin: 0; }
-  html, body { height: 100%; }
+  html { scroll-behavior: smooth; }
   body {
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: radial-gradient(1200px 700px at 15% 10%, #2b3070 0%, transparent 60%),
-                linear-gradient(160deg, var(--fondo-1), var(--fondo-2));
-    color: var(--texto-claro);
-    display: flex; align-items: center; justify-content: center;
-    gap: 72px; padding: 24px;
+    min-height: 100vh; background: var(--fondo); color: var(--texto); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; display: flex; flex-direction: column;
   }
+  ::selection { background: var(--teal); color: #000; }
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+  [hidden] { display: none !important; }
 
-  /* ---- Texto de presentación (a la izquierda) ---- */
-  .presentacion { max-width: 420px; }
-  .marca { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; color: var(--acento); font-size: 18px; }
-  .marca .punto { width: 12px; height: 12px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 5px rgba(79,209,181,.18); }
-  .presentacion h1 { font-size: 40px; line-height: 1.12; margin: 18px 0 16px; font-weight: 700; }
-  .presentacion p { color: var(--texto-suave); font-size: 18px; line-height: 1.5; }
-  .ventajas { list-style: none; padding: 0; margin-top: 26px; display: grid; gap: 14px; }
-  .ventajas li { display: flex; gap: 12px; align-items: flex-start; font-size: 17px; line-height: 1.4; }
-  .ventajas li::before { content: ""; flex: 0 0 22px; height: 22px; border-radius: 50%; margin-top: 1px;
-    background: var(--acento) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2314162b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/14px no-repeat; }
+  /* Luces de fondo */
+  .ambiente { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .ambiente span { position: absolute; border-radius: 50%; }
+  .luz-1 { top: -80px; right: 22%; width: 600px; height: 600px; background: rgba(6, 214, 160, .10); filter: blur(140px); }
+  .luz-2 { bottom: 40px; left: 40px; width: 500px; height: 500px; background: rgba(19, 78, 74, .22); filter: blur(160px); }
+  .luz-3 { top: 50%; left: 33%; width: 300px; height: 300px; background: rgba(245, 158, 11, .05); filter: blur(120px); }
 
-  /* ---- Celular ---- */
-  .columna-celular { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .contenedor { position: relative; z-index: 1; width: 100%; max-width: 1280px; margin: 0 auto; padding-inline: 32px; }
+
+  /* Encabezado */
+  .cabecera-sitio { padding-block: 28px 0; }
+  .cabecera-sitio .fila { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--linea); }
+  .marca { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+  .logo { width: 40px; height: 40px; border-radius: 16px; background: var(--noche); box-shadow: 0 0 0 1px rgba(6, 214, 160, .3), 0 10px 20px rgba(4, 47, 46, .4); display: grid; place-items: center; flex: none; }
+  .marca-nombre { font-family: var(--serif); font-weight: 700; font-size: 24px; color: #fff; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 6px; line-height: 1.1; }
+  .marca-nombre span { font-family: var(--sans); font-weight: 600; font-size: 19px; color: var(--teal); letter-spacing: .05em; }
+  .marca-sub { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .25em; color: var(--texto-3); font-weight: 500; margin-top: 2px; }
+  .cta-borde {
+    font: inherit; font-size: 12px; font-weight: 600; color: #fff; cursor: pointer; padding: 10px 20px; border-radius: 999px;
+    border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(var(--noche), var(--noche)) padding-box, linear-gradient(90deg, var(--teal), var(--glow), #34d399) border-box;
+    box-shadow: 0 10px 20px rgba(6, 214, 160, .1); transition: background .25s, color .25s;
+  }
+  .cta-borde:hover { background: linear-gradient(90deg, var(--teal), var(--glow), #34d399) padding-box, linear-gradient(90deg, var(--teal), var(--glow), #34d399) border-box; color: #000; }
+
+  /* Portada */
+  .hero { flex: 1; display: flex; align-items: center; padding-block: 40px; }
+  .hero .contenedor { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px; align-items: center; }
+  .presentacion { display: flex; flex-direction: column; gap: 28px; padding-right: 40px; min-width: 0; }
+  .volanta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .volanta-nombre { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 30px; color: var(--champagne); letter-spacing: .02em; }
+  .volanta-nombre span { font-family: var(--sans); font-style: normal; font-weight: 700; font-size: 18px; color: var(--teal); }
+  .volanta-sep { width: 1px; height: 14px; background: rgba(255, 255, 255, .2); }
+  .volanta-pildora { font-size: 11px; text-transform: uppercase; letter-spacing: .24em; font-weight: 600; color: var(--texto-3); background: rgba(255, 255, 255, .03); border: 1px solid rgba(255, 255, 255, .1); padding: 6px 12px; border-radius: 999px; }
+  .presentacion h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(48px, 5.3vw, 76px); line-height: 1.06; letter-spacing: -.015em; color: #fff; }
+  .presentacion h1 .wa { font-style: italic; font-weight: 400; color: var(--teal); text-shadow: 0 0 25px rgba(6, 214, 160, .35); }
+  .presentacion h1 .vos { font-style: italic; color: var(--champagne); }
+  .bajada { font-size: 18px; line-height: 1.65; color: rgba(203, 213, 225, .9); max-width: 36rem; }
+  .bajada u { color: #fff; font-weight: 500; text-decoration-color: rgba(6, 214, 160, .5); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  .divisor { width: 100%; max-width: 32rem; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .1), transparent); }
+  .ventajas { list-style: none; padding: 0; display: grid; gap: 16px; max-width: 36rem; font-size: 15px; font-weight: 300; color: var(--texto-2); }
+  .ventajas li { display: flex; align-items: center; gap: 16px; transition: transform .2s, color .2s; }
+  .ventajas li::before { content: ""; width: 20px; height: 1px; background: var(--texto-4); flex: none; transition: width .3s, background .3s; }
+  .ventajas li:hover { color: #fff; transform: translateX(4px); }
+  .ventajas li:hover::before { width: 28px; background: var(--teal); }
+  .ventajas strong { color: #fff; font-weight: 500; }
+  .acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-top: 4px; }
+  .boton-principal, .boton-secundario { font: inherit; font-size: 14px; font-weight: 500; border-radius: 999px; padding: 14px 28px; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; transition: background .3s, transform .3s, box-shadow .3s, color .3s; }
+  .boton-principal { background: var(--wa-mic); color: #fff; border: none; box-shadow: 0 10px 15px -3px rgba(0, 168, 132, .25); }
+  .boton-principal:hover { background: #00c298; transform: translateY(-2px); box-shadow: 0 10px 20px -3px rgba(0, 168, 132, .4); }
+  .boton-secundario { background: rgba(255, 255, 255, .05); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, .1); }
+  .boton-secundario:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+  .controles { display: flex; align-items: center; gap: 20px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 500; color: var(--texto-4); }
+  .controles button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .controles button:hover { color: var(--texto-2); }
+  .controles .punto { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+  .controles .punto.b { background: #2dd4bf; }
+  .controles .sep { color: rgba(255, 255, 255, .2); }
+
+  /* El celular */
+  .columna-celular { position: relative; display: flex; justify-content: center; align-items: center; padding-block: 24px; }
+  .halo { position: absolute; width: 360px; height: 580px; border-radius: 55px; background: linear-gradient(180deg, rgba(6, 214, 160, .2), rgba(19, 78, 74, .1), transparent); filter: blur(48px); pointer-events: none; }
   .celular {
-    width: 390px; height: min(800px, calc(100vh - 70px)); min-height: 480px;
-    background: #0b0c14; border-radius: 48px; padding: 12px;
-    box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 0 0 2px #2a2d40;
+    position: relative; width: 370px; height: clamp(560px, calc(100vh - 150px), 700px); background: #000; border-radius: 52px; padding: 10px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), 0 25px 60px -15px rgba(0, 0, 0, .8), 0 0 40px -10px rgba(6, 214, 160, .15);
+    font-family: var(--sans);
   }
-  .pantalla { height: 100%; border-radius: 38px; overflow: hidden; display: flex; flex-direction: column; background: var(--chat-fondo); position: relative; }
-  .barra-estado { height: 34px; background: var(--acento-osc); display: flex; align-items: center; justify-content: space-between; padding: 0 26px; font-size: 13px; font-weight: 600; color: #fff; }
-  .barra-estado .isla { width: 96px; height: 24px; background: #0b0c14; border-radius: 14px; }
-  .cabecera { background: var(--acento-osc); color: #fff; display: flex; align-items: center; gap: 12px; padding: 8px 16px 12px; }
-  .avatar { width: 42px; height: 42px; border-radius: 50%; background: #fff; color: var(--acento-osc); display: grid; place-items: center; font-weight: 700; font-size: 16px; flex: none; }
-  .cabecera .nombre { font-weight: 600; font-size: 16.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cabecera .estado { font-size: 13px; opacity: .88; }
+  .pantalla { position: relative; height: 100%; border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; background: var(--wa-chat); border: 1px solid #262626; }
+  .isla { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 112px; height: 20px; background: #000; border-radius: 999px; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+  .isla i { width: 9px; height: 9px; border-radius: 50%; background: #171717; }
+  .barra-estado { background: var(--wa-verde); color: #fff; padding: 10px 28px 4px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; }
+  .barra-estado .iconos { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .bateria { width: 20px; height: 10px; border: 1px solid rgba(255, 255, 255, .8); border-radius: 3px; padding: 1px; }
+  .bateria i { display: block; width: 100%; height: 100%; background: #fff; border-radius: 1px; }
+  .cabecera { background: var(--wa-verde); color: #fff; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(0, 0, 0, .12); z-index: 2; }
+  .cabecera .izq { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .cabecera svg { flex: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #d1fae5; color: var(--wa-verde); display: grid; place-items: center; font-weight: 700; font-size: 12px; letter-spacing: .05em; flex: none; }
+  .cabecera .nombre { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cabecera .estado { font-size: 11px; color: #d1fae5; font-weight: 300; }
+  .cabecera .der { display: flex; gap: 14px; opacity: .9; }
 
   .chat {
-    flex: 1; overflow-y: auto; padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 6px;
-    background-color: var(--chat-fondo);
-    background-image: radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);
-    background-size: 18px 18px;
+    flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; color: var(--tinta);
+    background-color: var(--wa-chat);
+    background-image: radial-gradient(#d6cec4 1px, transparent 1px), radial-gradient(#d6cec4 1px, transparent 1px);
+    background-size: 24px 24px; background-position: 0 0, 12px 12px;
   }
-  .chip { align-self: center; background: #fff8d6; color: #5c5330; font-size: 12.5px; line-height: 1.4; text-align: center; padding: 7px 12px; border-radius: 9px; max-width: 88%; margin: 4px 0 8px; box-shadow: 0 1px 1px rgba(0,0,0,.06); }
-  .chip.dia { background: #fff; color: var(--tinta-suave); padding: 4px 12px; }
-  .chip.aviso { background: #e7ecff; color: #36407a; }
+  .chip { align-self: center; background: rgba(255, 255, 255, .85); color: #54656f; font-size: 11px; font-weight: 500; padding: 3px 12px; border-radius: 6px; box-shadow: 0 1px 1px rgba(0, 0, 0, .06); text-align: center; }
+  .chip.sistema { background: #fff3c4; border: 1px solid rgba(253, 230, 138, .7); color: #78350f; font-size: 11.5px; line-height: 1.4; padding: 10px; border-radius: 8px; font-weight: 400; max-width: 100%; }
+  .chip.aviso { background: #e7ecff; color: #36407a; max-width: 90%; font-size: 11.5px; line-height: 1.4; padding: 6px 12px; }
 
-  .burbuja { max-width: 82%; padding: 7px 10px 6px; border-radius: 10px; font-size: 15px; line-height: 1.42; color: var(--tinta); white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 1px 1px rgba(0,0,0,.08); position: relative; animation: entrar .18s ease-out; }
-  .burbuja .hora { float: right; font-size: 11px; color: var(--tinta-suave); margin: 8px 0 -4px 10px; }
-  .bot { align-self: flex-start; background: var(--burbuja-bot); border-top-left-radius: 3px; }
-  .cliente { align-self: flex-end; background: var(--burbuja-cliente); border-top-right-radius: 3px; }
-  .seguido.bot { border-top-left-radius: 10px; }
-  .seguido.cliente { border-top-right-radius: 10px; }
+  .burbuja { max-width: 84%; padding: 7px 11px 6px; border-radius: 16px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); position: relative; animation: entrar .18s ease-out; }
+  .bot { align-self: flex-start; background: #fff; border: 1px solid #f5f5f5; border-top-left-radius: 2px; }
+  .cliente { align-self: flex-end; background: var(--wa-saliente); border-top-right-radius: 2px; }
+  .seguido.bot { border-top-left-radius: 16px; }
+  .seguido.cliente { border-top-right-radius: 16px; }
+  .hora { float: right; display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--tinta-suave); margin: 8px 0 -3px 10px; }
+  .tildes { width: 14px; height: 14px; color: #53bdeb; }
   @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .burbuja a { color: #0066cc; text-decoration: underline; overflow-wrap: anywhere; font-size: 11.5px; }
+  .burbuja a.tarjeta-pago { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; border-radius: 12px; background: #f0f4f9; border: 1px solid rgba(219, 234, 254, .8); color: var(--tinta); text-decoration: none; white-space: normal; font-size: 13px; }
+  .tarjeta-pago:hover { background: #eaf2ff; }
+  .tp-icono { width: 40px; height: 40px; border-radius: 50%; background: #009ee3; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 17px; flex: none; }
+  .tarjeta-pago b { display: block; font-size: 12px; font-weight: 600; }
+  .tarjeta-pago small { display: block; font-size: 11px; color: #737373; }
+  .tp-flecha { margin-left: auto; color: #a3a3a3; font-size: 20px; line-height: 1; }
 
-  .escribiendo { align-self: flex-start; background: #fff; border-radius: 10px; border-top-left-radius: 3px; padding: 12px 14px; display: none; gap: 5px; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+  .escribiendo { align-self: flex-start; background: #fff; border-radius: 16px; border-top-left-radius: 2px; padding: 12px 14px; display: none; gap: 5px; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); }
   .escribiendo.visible { display: flex; }
   .escribiendo span { width: 7px; height: 7px; border-radius: 50%; background: #9aa1b5; animation: rebote 1.2s infinite; }
   .escribiendo span:nth-child(2) { animation-delay: .15s; }
   .escribiendo span:nth-child(3) { animation-delay: .3s; }
   @keyframes rebote { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
 
-  .entrada { display: flex; gap: 8px; padding: 8px 10px 14px; background: transparent; align-items: flex-end; }
-  .entrada textarea {
-    flex: 1; resize: none; border: none; outline: none; border-radius: 22px; padding: 11px 16px; font: inherit; font-size: 15px;
-    max-height: 110px; background: #fff; color: var(--tinta); box-shadow: 0 1px 1px rgba(0,0,0,.08);
-  }
-  .entrada button { width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--acento-osc); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; transition: transform .1s, opacity .2s; }
-  .entrada button:active { transform: scale(.94); }
-  .entrada button:disabled { opacity: .45; cursor: default; }
-
-  /* Grabación de nota de voz */
-  .grabando { flex: 1; display: none; align-items: center; gap: 10px; background: #fff; border-radius: 23px; height: 46px; padding: 0 6px 0 16px; color: var(--tinta); font-size: 15px; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
-  .entrada.modo-grabando textarea { display: none; }
+  /* Barra para escribir */
+  .entrada { background: var(--wa-barra); padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #e5e5e5; }
+  .emoji { color: #737373; display: grid; place-items: center; flex: none; }
+  .campo { flex: 1; display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid rgba(229, 229, 229, .8); border-radius: 999px; padding: 4px 12px 4px 14px; min-width: 0; }
+  .campo textarea { flex: 1; resize: none; border: none; outline: none; font: inherit; font-size: 13px; line-height: 1.4; padding: 6px 0; max-height: 96px; background: transparent; color: var(--tinta); min-width: 0; }
+  .campo svg { color: #a3a3a3; flex: none; }
+  .entrada > button#enviar { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--wa-mic); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); transition: transform .1s, opacity .2s, background .2s; }
+  .entrada > button#enviar:hover { background: #008f6f; }
+  .entrada > button#enviar:active { transform: scale(.94); }
+  .entrada > button#enviar:disabled { opacity: .45; cursor: default; }
+  .grabando { flex: 1; display: none; align-items: center; gap: 10px; background: #fff; border-radius: 999px; height: 38px; padding: 0 4px 0 14px; color: var(--tinta); font-size: 13px; border: 1px solid rgba(229, 229, 229, .8); }
+  .entrada.modo-grabando .campo, .entrada.modo-grabando .emoji { display: none; }
   .entrada.modo-grabando .grabando { display: flex; }
   .punto-rojo { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; animation: latir 1s infinite; flex: none; }
   @keyframes latir { 50% { opacity: .25; } }
   .grabando .tiempo { font-variant-numeric: tabular-nums; }
-  .grabando .leyenda { color: var(--tinta-suave); font-size: 14px; }
-  .entrada .cancelar { margin-left: auto; width: auto; height: 34px; padding: 0 12px; border-radius: 17px; background: none; color: #c0392b; font: inherit; font-size: 14px; }
-  .entrada .cancelar:hover { background: #fdecea; }
+  .grabando .leyenda { color: var(--tinta-suave); font-size: 12.5px; }
+  .cancelar { margin-left: auto; height: 30px; padding: 0 12px; border-radius: 15px; border: none; background: none; color: #c0392b; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .cancelar:hover { background: #fdecea; }
+  .barra-home { background: var(--wa-barra); padding-bottom: 8px; display: flex; justify-content: center; }
+  .barra-home i { width: 128px; height: 4px; border-radius: 999px; background: #a3a3a3; }
 
   /* Nota de voz dentro del chat */
-  .nota { display: flex; align-items: center; gap: 10px; min-width: 220px; padding: 2px 0; }
-  .nota .play { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--acento-osc); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .nota { display: flex; align-items: center; gap: 10px; min-width: 210px; padding: 2px 0; }
+  .nota .play { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--wa-mic); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; }
   .nota .onda { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; }
-  .nota .onda i { display: block; flex: 1; max-width: 4px; min-height: 3px; border-radius: 2px; background: #9cc9bd; }
-  .nota .onda i.oido { background: var(--acento-osc); }
-  .nota .duracion { font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
-  .burbuja a { color: #0b66c3; text-decoration: underline; overflow-wrap: anywhere; }
-  .burbuja a.tarjeta-pago { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 10px; border-radius: 8px; background: #f0f4ff; color: var(--tinta); text-decoration: none; white-space: normal; border-left: 4px solid #009ee3; }
-  .tarjeta-pago:hover { background: #e4ecff; }
-  .tp-icono { width: 32px; height: 32px; border-radius: 50%; background: #009ee3; color: #fff; display: grid; place-items: center; font-weight: 700; flex: none; }
-  .tarjeta-pago b { display: block; font-size: 14px; }
-  .tarjeta-pago small { display: block; font-size: 12px; color: var(--tinta-suave); }
-  .transcripcion { display: block; font-size: 13px; line-height: 1.4; color: #4b5563; font-style: italic; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,.07); }
+  .nota .onda i { display: block; flex: 1; max-width: 4px; min-height: 3px; border-radius: 2px; background: #8fbf9f; }
+  .nota .onda i.oido { background: var(--wa-mic); }
+  .nota .duracion { font-size: 11px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .transcripcion { display: block; font-size: 12px; line-height: 1.4; color: #4b5563; font-style: italic; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0, 0, 0, .07); }
 
-  .controles { display: flex; gap: 18px; font-size: 13px; }
-  .controles button { background: none; border: none; color: var(--texto-suave); cursor: pointer; font: inherit; padding: 4px 2px; }
-  .controles button:hover { color: var(--texto-claro); text-decoration: underline; }
+  /* Onda de voz */
+  .banda-onda { position: relative; z-index: 1; border-top: 1px solid var(--linea); padding-block: 16px; }
+  .banda-onda .contenedor { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .visualizador { display: flex; align-items: center; justify-content: center; gap: 5px; height: 48px; opacity: .6; transition: opacity .3s; }
+  .visualizador:hover { opacity: 1; }
+  .visualizador i { display: block; width: 4px; border-radius: 999px; }
+  .visualizador .t30 { background: rgba(6, 214, 160, .3); }
+  .visualizador .t40 { background: rgba(6, 214, 160, .4); }
+  .visualizador .t60 { background: rgba(6, 214, 160, .6); }
+  .visualizador .t80 { background: rgba(6, 214, 160, .8); }
+  .visualizador .t100 { background: var(--teal); }
+  .visualizador .glow { background: var(--glow); }
+  .visualizador .blanco { background: rgba(255, 255, 255, .45); }
+  .leyenda-onda { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--texto-4); display: flex; align-items: center; gap: 8px; text-align: center; }
+  .vivo { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex: none; }
+  .vivo::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--teal); animation: ping 1.4s cubic-bezier(0, 0, .2, 1) infinite; }
+  @keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
 
-  /* Pantallas medianas (o con mucho zoom): solo el celular. */
-  @media (max-width: 1080px) {
-    body { gap: 0; }
-    .presentacion { display: none; }
+  /* Pie */
+  .pie { position: relative; z-index: 1; border-top: 1px solid var(--linea); background: rgba(0, 0, 0, .4); padding-block: 24px; font-size: 12px; color: var(--texto-4); }
+  .pie i { font-family: var(--serif); font-weight: 600; color: var(--texto-3); font-size: 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
   }
-  /* Un celular de verdad: el chat ocupa toda la pantalla. */
+  /* Pantallas medianas: el texto arriba y el celular abajo. */
+  @media (max-width: 1023px) {
+    .hero .contenedor { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+    .presentacion { padding-right: 0; }
+  }
+  /* Un celular de verdad: solo el chat, a pantalla completa. */
   @media (max-width: 560px) {
-    body { gap: 0; padding: 0; }
-    .controles { display: none; }
-    .celular { width: 100%; height: 100vh; min-height: 0; border-radius: 0; padding: 0; box-shadow: none; }
-    .pantalla { border-radius: 0; }
-    .barra-estado { display: none; }
+    .ambiente, .cabecera-sitio, .presentacion, .banda-onda, .pie, .halo { display: none; }
+    .hero { padding-block: 0; }
+    .contenedor { padding-inline: 0; }
+    .columna-celular { padding-block: 0; }
+    .celular { width: 100%; height: 100vh; border-radius: 0; padding: 0; box-shadow: none; }
+    .pantalla { border-radius: 0; border: none; }
+    .isla, .barra-estado, .barra-home { display: none; }
   }
 </style>
 </head>
 <body>
-  <section class="presentacion">
-    <div class="marca"><span class="punto"></span>Siren IA</div>
-    <h1>Un asistente que atiende tu WhatsApp como vos.</h1>
-    <p>Probalo como si fueras un cliente. Las respuestas salen de la planilla del negocio, en el momento.</p>
-    <ul class="ventajas">
-      <li>Responde con tus precios y tu stock reales.</li>
-      <li>Toma pedidos y los anota en tu planilla.</li>
-      <li>Te pasa la charla cuando hace falta una persona.</li>
-      <li>Atiende de día, de noche y los domingos.</li>
-    </ul>
-  </section>
+  <div class="ambiente" aria-hidden="true"><span class="luz-1"></span><span class="luz-2"></span><span class="luz-3"></span></div>
 
-  <div class="columna-celular">
-    <div class="celular">
-      <div class="pantalla">
-        <div class="barra-estado"><span id="reloj">9:41</span><span class="isla"></span><span>5G ▮▮▮</span></div>
-        <div class="cabecera">
-          <div class="avatar" id="avatar">··</div>
-          <div style="min-width:0">
-            <div class="nombre" id="nombre">Cargando…</div>
-            <div class="estado" id="estado">en línea</div>
-          </div>
-        </div>
-        <div class="chat" id="chat">
-          <div class="chip dia">Hoy</div>
-          <div class="chip">Demo de Siren IA. Escribí o mandá un audio como si fueras un cliente del negocio.</div>
-          <div class="escribiendo" id="escribiendo"><span></span><span></span><span></span></div>
-        </div>
-        <form class="entrada" id="formulario" autocomplete="off">
-          <textarea id="texto" rows="1" placeholder="Escribí un mensaje" maxlength="1000"></textarea>
-          <div class="grabando" aria-live="polite">
-            <span class="punto-rojo"></span>
-            <span class="tiempo" id="tiempo">0:00</span>
-            <span class="leyenda">Grabando…</span>
-            <button type="button" class="cancelar" id="cancelar">Cancelar</button>
-          </div>
-          <button id="enviar" type="submit" aria-label="Grabar audio">
-            <svg id="icono-mic" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
-            <svg id="icono-enviar" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12l-11.61 1.87z"/></svg>
-          </button>
-        </form>
+  <header class="cabecera-sitio">
+    <div class="contenedor">
+      <div class="fila">
+        <a class="marca" href="#" aria-label="Siren IA">
+          <span class="logo" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 2.5c3.6 4.4 7 8.3 7 12A7 7 0 0 1 5 14.5c0-3.7 3.4-7.6 7-12z" fill="#06d6a0"/><circle cx="14.6" cy="9.4" r="1.3" fill="#0a101d"/></svg>
+          </span>
+          <span>
+            <span class="marca-nombre">Siren <span>IA</span></span>
+            <span class="marca-sub">Agente IA para WhatsApp</span>
+          </span>
+        </a>
+        <button type="button" class="cta-borde" data-probar>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>
+          Probalo ahora
+        </button>
       </div>
     </div>
-    <div class="controles">
-      <button type="button" id="nuevo">Nuevo cliente</button>
-      <button type="button" id="reanudar">Reactivar el bot</button>
+  </header>
+
+  <main class="hero">
+    <div class="contenedor">
+      <section class="presentacion">
+        <div class="volanta">
+          <span class="volanta-nombre">Siren <span>IA</span></span>
+          <span class="volanta-sep"></span>
+          <span class="volanta-pildora">Asistentes con IA para WhatsApp</span>
+        </div>
+        <h1>Un asistente<br>que atiende tu<br><span class="wa">WhatsApp</span><br><span class="vos">como vos.</span></h1>
+        <p class="bajada">Probalo como si fueras un cliente. Las respuestas salen de la planilla del negocio, <u>en el momento</u>.</p>
+        <div class="divisor"></div>
+        <ul class="ventajas">
+          <li>Responde con tus precios y tu stock reales.</li>
+          <li>Entiende audios de voz y toma pedidos.</li>
+          <li><span>Cobra con <strong>Mercado Pago</strong> y manda el link de pago en el chat.</span></li>
+          <li>Te pasa la charla cuando hace falta una persona.</li>
+        </ul>
+        <div class="acciones">
+          <button type="button" class="boton-principal" data-probar>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>
+            Probalo ahora
+          </button>
+          <a class="boton-secundario" id="agendar" href="#" target="_blank" rel="noopener noreferrer" hidden>
+            Agendar demostración
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5l7 7-7 7M21 12H3"/></svg>
+          </a>
+        </div>
+        <div class="controles">
+          <button type="button" id="nuevo"><span class="punto"></span>Nuevo cliente</button>
+          <span class="sep" aria-hidden="true">•</span>
+          <button type="button" id="reanudar"><span class="punto b"></span>Reactivar el bot</button>
+        </div>
+      </section>
+
+      <section class="columna-celular">
+        <div class="halo" aria-hidden="true"></div>
+        <div class="celular">
+          <div class="pantalla">
+            <div class="isla" aria-hidden="true"><i></i><i></i></div>
+            <div class="barra-estado">
+              <span id="reloj">13:59</span>
+              <span class="iconos" aria-hidden="true">5G
+                <svg width="16" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="14" width="3" height="8" rx=".5"/><rect x="7" y="10" width="3" height="12" rx=".5"/><rect x="12" y="6" width="3" height="16" rx=".5"/><rect x="17" y="2" width="3" height="20" rx=".5"/></svg>
+                <span class="bateria"><i></i></span>
+              </span>
+            </div>
+            <div class="cabecera">
+              <div class="izq">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+                <div class="avatar" id="avatar">··</div>
+                <div style="min-width:0">
+                  <div class="nombre" id="nombre">Cargando…</div>
+                  <div class="estado" id="estado">en línea</div>
+                </div>
+              </div>
+              <div class="der" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+              </div>
+            </div>
+            <div class="chat" id="chat">
+              <div class="chip">Hoy</div>
+              <div class="chip sistema">Demo de Siren IA. Escribí o mandá un audio como si fueras un cliente del negocio.</div>
+              <div class="escribiendo" id="escribiendo"><span></span><span></span><span></span></div>
+            </div>
+            <form class="entrada" id="formulario" autocomplete="off">
+              <span class="emoji" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-3.5-9c.828 0 1.5-.672 1.5-1.5S9.328 8 8.5 8 7 8.672 7 9.5 7.672 11 8.5 11zm7 0c.828 0 1.5-.672 1.5-1.5S16.328 8 15.5 8 14 8.672 14 9.5s.672 1.5 1.5 1.5zm-3.5 6.5c2.33 0 4.31-1.55 4.88-3.75h-9.76c.57 2.2 2.55 3.75 4.88 3.75z"/></svg>
+              </span>
+              <div class="campo">
+                <textarea id="texto" rows="1" placeholder="Escribí un mensaje" maxlength="1000" aria-label="Mensaje"></textarea>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V6H9v9.5a3 3 0 0 0 6 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+              </div>
+              <div class="grabando" aria-live="polite">
+                <span class="punto-rojo"></span>
+                <span class="tiempo" id="tiempo">0:00</span>
+                <span class="leyenda">Grabando…</span>
+                <button type="button" class="cancelar" id="cancelar">Cancelar</button>
+              </div>
+              <button id="enviar" type="submit" aria-label="Grabar audio">
+                <svg id="icono-mic" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                <svg id="icono-enviar" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12l-11.61 1.87z"/></svg>
+              </button>
+            </form>
+            <div class="barra-home" aria-hidden="true"><i></i></div>
+          </div>
+        </div>
+      </section>
     </div>
-  </div>
+  </main>
+
+  <section class="banda-onda" aria-hidden="true">
+    <div class="contenedor">
+      <div class="visualizador" id="visualizador"></div>
+      <p class="leyenda-onda"><span class="vivo"></span>Procesando lenguaje natural, modismos argentinos y notas de voz al instante</p>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <div class="contenedor"><i>Siren IA</i> — Automatización conversacional para comercios y pymes.</div>
+  </footer>
 
 <script>
+  // La onda de voz de abajo: barras de distinta altura y tono.
+  (function dibujarOnda() {
+    const caja = document.getElementById("visualizador");
+    const tonos = ["t30", "t40", "t60", "t100", "glow", "blanco", "t100", "t80", "t100", "blanco"];
+    for (let i = 0; i < 44; i++) {
+      const forma = Math.sin((i / 43) * Math.PI);
+      const alto = 6 + 42 * forma * (0.45 + 0.55 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.6)));
+      const barra = document.createElement("i");
+      barra.className = tonos[i % tonos.length];
+      barra.style.height = Math.round(alto) + "px";
+      caja.appendChild(barra);
+    }
+  })();
+
+  // Los botones "Probalo ahora" llevan al chat y dejan listo el campo para escribir.
+  document.querySelectorAll("[data-probar]").forEach((b) =>
+    b.addEventListener("click", () => {
+      document.querySelector(".celular").scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("texto").focus({ preventScroll: true });
+    }),
+  );
+
   const chat = document.getElementById("chat");
   const escribiendo = document.getElementById("escribiendo");
   const estado = document.getElementById("estado");
@@ -196,15 +390,53 @@
 
   const hora = () => new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 
+  // La hora de cada burbuja; las del cliente llevan las dos tildes azules de "leído".
+  function marcaDeHora(autor) {
+    const h = document.createElement("span");
+    h.className = "hora";
+    h.textContent = hora();
+    if (autor === "cliente") {
+      h.insertAdjacentHTML("beforeend", '<svg class="tildes" viewBox="0 0 16 15" aria-hidden="true"><path fill="currentColor" d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.376.126.502-.028l6.14-7.962a.418.418 0 0 0-.063-.542z"/><path fill="currentColor" d="M11.666 3.316l-.478-.372a.365.365 0 0 0-.51.063L5.322 9.879a.32.32 0 0 1-.484.033L2.58 7.747a.366.366 0 0 0-.512.038l-.403.469a.418.418 0 0 0 .038.541l3.059 2.937c.143.14.376.126.502-.028l6.14-7.962a.418.418 0 0 0-.063-.542z"/></svg>');
+    }
+    return h;
+  }
+
   function actualizarReloj() { document.getElementById("reloj").textContent = hora(); }
   actualizarReloj();
   setInterval(actualizarReloj, 30000);
+
+  // ---------- Sesión: cada visitante tiene su propia charla ----------
+  let sesion = null;
+  let enlaceContacto = "";
+  async function nuevaSesion() {
+    const r = await fetch("/api/sesion", { method: "POST" }).then((x) => x.json());
+    sesion = r.sesion;
+  }
+  const listaSesion = nuevaSesion().catch(() => {});
+  // Agrega la sesión a cada pedido al bot.
+  async function pedirAlBot(ruta, opciones = {}) {
+    await listaSesion;
+    if (!sesion) await nuevaSesion();
+    return fetch(ruta, { method: "POST", ...opciones, headers: { ...(opciones.headers ?? {}), "X-Demo-Sesion": sesion } });
+  }
 
   fetch("/api/info").then((r) => r.json()).then((info) => {
     document.getElementById("nombre").textContent = info.nombre;
     const iniciales = info.nombre.split(/\s+/).filter((p) => p.length > 2).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
     document.getElementById("avatar").textContent = iniciales || "IA";
     document.title = `${info.nombre} · Demo Siren IA`;
+    // "Agendar demostración" abre tu WhatsApp, si cargaste SIREN_CONTACTO_WHATSAPP en el .env.
+    if (info.contacto) {
+      const agendar = document.getElementById("agendar");
+      agendar.href = `https://wa.me/${info.contacto}?text=${encodeURIComponent("Hola! Quiero agendar una demostración de Siren IA.")}`;
+      agendar.hidden = false;
+      enlaceContacto = agendar.href;
+    }
+    // Publicada en internet, se aclara que los pedidos son de prueba.
+    if (info.publica) {
+      document.querySelector(".chip.sistema").textContent =
+        "Demo de Siren IA. Escribí o mandá un audio como si fueras un cliente. Los pedidos y pagos son de prueba: no se anotan ni se cobran.";
+    }
   });
 
   // Pasa el formato de WhatsApp (*negrita*, _cursiva_) a la pantalla sin usar innerHTML.
@@ -270,13 +502,14 @@
       const dominio = document.createElement("small");
       dominio.textContent = new URL(link).hostname.replace(/^www\./, "");
       textos.append(titulo, dominio);
-      tarjeta.append(icono, textos);
+      const flecha = document.createElement("span");
+      flecha.className = "tp-flecha";
+      flecha.setAttribute("aria-hidden", "true");
+      flecha.textContent = "›";
+      tarjeta.append(icono, textos, flecha);
       div.appendChild(tarjeta);
     }
-    const h = document.createElement("span");
-    h.className = "hora";
-    h.textContent = hora();
-    div.appendChild(h);
+    div.appendChild(marcaDeHora(autor));
     chat.insertBefore(div, escribiendo);
     ultimoAutor = autor;
     bajar();
@@ -315,12 +548,17 @@
       if (r.tipo === "respuesta") agregarBurbuja("bot", r.texto);
       else if (r.tipo === "pausa") agregarAviso("La charla la sigue una persona del negocio.");
       else if (r.tipo === "audio-largo") agregarAviso("El audio es demasiado largo.");
+      else if (r.tipo === "limite") avisarLimite(r.motivo);
+      else if (r.tipo === "sin-sesion") {
+        await nuevaSesion();
+        agregarAviso("La demo se reinició. Empezamos una charla nueva: mandá tu mensaje otra vez.");
+      }
       else if (r.tipo === "error") agregarAviso("El bot tuvo un problema técnico. Probá de nuevo.");
       else agregarAviso("El bot no respondió. Probá de nuevo.");
     } catch {
       clearTimeout(demora);
       mostrarEscribiendo(false);
-      agregarAviso("No hay conexión con el bot. ¿Sigue corriendo npm run demo?");
+      agregarAviso("No hay conexión con el bot. Probá de nuevo en un momento.");
     } finally {
       ocupado = false;
       actualizarBoton();
@@ -331,8 +569,20 @@
   function enviar(texto) {
     agregarBurbuja("cliente", texto);
     return conversar(() =>
-      fetch("/api/mensaje", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) }),
+      pedirAlBot("/api/mensaje", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) }),
     );
+  }
+
+  // Los límites protegen la demo cuando está en internet.
+  function avisarLimite(motivo) {
+    const textos = {
+      ip: "Estás escribiendo muy rápido. Esperá un minuto y seguimos.",
+      sesion: "Llegaste al máximo de mensajes de esta demo. Tocá \"Nuevo cliente\" para empezar otra charla.",
+      dia: "La demo llegó a su límite de mensajes por hoy. Volvé mañana.",
+    };
+    let texto = textos[motivo] ?? "La demo llegó a un límite. Probá más tarde.";
+    if (enlaceContacto && motivo !== "ip") texto += " Si querés verla completa, tocá \"Agendar demostración\".";
+    agregarAviso(texto);
   }
 
   // ---------- Notas de voz ----------
@@ -417,7 +667,7 @@
     const blob = new Blob(g.partes, { type: g.recorder.mimeType || "audio/webm" });
     const burbuja = agregarNotaDeVoz(blob, g.duracion, g.niveles);
     conversar(
-      () => fetch("/api/audio", { method: "POST", headers: { "Content-Type": blob.type || "audio/webm" }, body: blob }),
+      () => pedirAlBot("/api/audio", { headers: { "Content-Type": blob.type || "audio/webm" }, body: blob }),
       (texto) => {
         const t = document.createElement("span");
         t.className = "transcripcion";
@@ -475,10 +725,7 @@
 
     nota.append(play, onda, dur);
     div.appendChild(nota);
-    const h = document.createElement("span");
-    h.className = "hora";
-    h.textContent = hora();
-    div.appendChild(h);
+    div.appendChild(marcaDeHora("cliente"));
     chat.insertBefore(div, escribiendo);
     ultimoAutor = "cliente";
     bajar();
@@ -526,13 +773,13 @@
   });
 
   document.getElementById("nuevo").addEventListener("click", async () => {
-    await fetch("/api/nuevo", { method: "POST" });
+    await nuevaSesion();
     for (const el of [...chat.querySelectorAll(".burbuja, .chip.aviso")]) el.remove();
     ultimoAutor = null;
     campo.focus();
   });
   document.getElementById("reanudar").addEventListener("click", async () => {
-    await fetch("/api/reanudar", { method: "POST" });
+    await pedirAlBot("/api/reanudar");
     agregarAviso("El bot volvió a atender esta charla.");
   });
 
