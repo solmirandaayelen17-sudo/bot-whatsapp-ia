@@ -7,6 +7,7 @@
   "scripts": {
     "consola": "node src/canales/consola.js",
     "servidor": "node src/servidor.js",
+    "simulador": "node src/simulador.js",
     "diagnostico": "node src/diagnostico.js",
     "test": "node --test"
   },

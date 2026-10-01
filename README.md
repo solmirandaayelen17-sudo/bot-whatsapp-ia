@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-26%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-30%20OK-brightgreen)
 
 ## Demo
 
@@ -29,7 +29,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **26 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **30 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -46,7 +46,8 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 ## Estado
 
 - **Funciona de punta a punta** en el chat de prueba, leyendo y escribiendo en Google Sheets.
-- **En curso:** la conexión al número de prueba de WhatsApp. El código del webhook ya está hecho y tiene pruebas.
+- **El webhook de WhatsApp está probado** con un simulador que manda los mensajes con el formato y la firma de Meta (`npm run simulador`).
+- **Pendiente:** mandar y recibir mensajes reales por WhatsApp. Meta pide verificar el negocio antes de habilitar el envío, y eso se hace con el primer cliente.
 - Lo que sigue está más abajo, en *Qué NO hace todavía*.
 
 ## Autora
@@ -58,7 +59,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (26 tests using a fake LLM). The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (30 tests using a fake LLM), plus a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -70,6 +71,7 @@ flowchart LR
     C[Cliente en WhatsApp] --> M[Meta<br/>Cloud API]
     M -->|webhook| W[canales/whatsapp.js<br/>verifica firma y<br/>detecta la empresa]
     T[canales/consola.js<br/>chat de prueba] --> P
+    S[simulador.js<br/>hace de Meta] -->|aviso firmado| W
     W --> P[nucleo/procesador.js<br/>cola, pausas y memoria]
     P --> A[agente<br/>LangGraph + Gemini]
     A <--> H[herramientas<br/>buscar, pedir, derivar]
@@ -141,8 +143,11 @@ bot-whatsapp-ia/
 │   ├── nucleo/                ← procesador, colas y pausas
 │   ├── canales/
 │   │   ├── consola.js         ← chat de prueba en la terminal
-│   │   └── whatsapp.js        ← webhook y envío por la API oficial
+│   │   ├── whatsapp.js        ← webhook y envío por la API oficial
+│   │   ├── avisoMeta.js       ← arma y firma mensajes iguales a los de Meta
+│   │   └── simuladorWhatsApp.js ← hace de Meta para probar el webhook
 │   ├── servidor.js            ← servidor para WhatsApp
+│   ├── simulador.js           ← chat de prueba que pasa por el webhook
 │   └── diagnostico.js         ← prueba Gemini y las planillas y dice qué falla
 └── test/                      ← pruebas automáticas (npm test)
 ```
@@ -203,7 +208,28 @@ Necesitás **Node.js 20 o más nuevo** (con `node -v` ves la versión) y **Git**
 
 > Un stock vacío significa "no se controla stock", que sirve para servicios como la alineación. Un stock en 0 significa que no hay.
 
+### Paso 2½: probar el webhook de WhatsApp sin Meta (2 minutos, gratis)
+
+El simulador hace de Meta: arma cada mensaje con el mismo formato que manda WhatsApp, lo firma y lo manda al webhook real del bot. Así se prueba todo el camino (firma, empresa por número, IA, planilla y respuesta) sin cuenta de Meta y sin completar las claves de WhatsApp del `.env`.
+
+```bash
+npm run simulador -- gomeria-demo
+```
+
+Escribí como si fueras un cliente. Además tenés estos comandos:
+
+| Comando | Qué muestra |
+|---|---|
+| `/audio` | El cliente manda una nota de voz (por ahora el bot pide que lo escriba) |
+| `/repetido` | Meta reenvía el mismo aviso y el bot no contesta dos veces |
+| `/trucho` | Alguien que no es Meta manda un mensaje con firma falsa y el bot lo rechaza |
+| `/nuevo` | Escribe otro cliente, desde otro número |
+| `/reanudar` | Saca la pausa si el bot derivó la charla a una persona |
+| `/salir` | Cierra el simulador |
+
 ### Paso 3: conectarlo a WhatsApp con el número de prueba de Meta (30 minutos, gratis)
+
+> **Antes de empezar:** Meta puede pedir que **verifiques el negocio** (nombre legal, dirección y una constancia, por ejemplo de ARCA) antes de dejarte mandar mensajes, incluso con el número de prueba. Si escribís y no llega nada, y en los webhooks de prueba aparece el error `131031` (*Business Account locked*), es eso. Mientras tanto, usá el simulador del paso anterior. Con un cliente real, el que verifica es su negocio.
 
 1. En <https://developers.facebook.com> creá una app y agregale el producto/caso de uso **WhatsApp**. Meta te da un **número de prueba gratis**.
 2. En **WhatsApp → Configuración de la API** vas a encontrar:
@@ -244,7 +270,7 @@ Necesitás **Node.js 20 o más nuevo** (con `node -v` ves la versión) y **Git**
    | Atención 24/7 | `["buscar_productos", "derivar_a_humano"]` |
    | Vende y agenda / Todo conectado | `["buscar_productos", "tomar_pedidos", "derivar_a_humano"]` + las que se sumen (turnos, cobros) |
 
-6. Probalo con `npm run consola -- <id-del-cliente>` antes de conectarlo a su WhatsApp.
+6. Probalo con `npm run consola -- <id-del-cliente>` y con `npm run simulador -- <id-del-cliente>` antes de conectarlo a su WhatsApp.
 
 Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice exactamente qué falta.
 
@@ -283,4 +309,5 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 | `npm test` | Corre las pruebas automáticas |
 | `npm run diagnostico` | Prueba Gemini y las planillas paso a paso y dice qué falla |
 | `npm run consola -- <id>` | Chat de prueba en la terminal (`/nuevo`, `/reanudar`, `/salir`) |
+| `npm run simulador -- <id>` | Chat de prueba que pasa por el webhook, como si fuera WhatsApp (`/audio`, `/repetido`, `/trucho`, `/nuevo`, `/reanudar`, `/salir`) |
 | `npm run servidor` | Levanta el servidor para WhatsApp |
