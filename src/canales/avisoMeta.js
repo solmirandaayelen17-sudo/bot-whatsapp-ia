@@ -13,11 +13,14 @@ export function firmarCuerpo(cuerpo, appSecret) {
 }
 
 // Devuelve un aviso con el mismo formato que Meta (whatsapp_business_account).
-// tipo "text" lleva texto; "audio" simula una nota de voz (sin el archivo).
-export function armarAvisoDeMeta({ phoneNumberId, de, nombre, texto, tipo = "text", id = nuevoIdDeMensaje() }) {
+// tipo "text" lleva texto; "audio" es una nota de voz. Igual que Meta, el aviso
+// NO trae el audio: trae un id (mediaId) con el que después se descarga.
+export function armarAvisoDeMeta({ phoneNumberId, de, nombre, texto, tipo = "text", id = nuevoIdDeMensaje(), audio = {} }) {
   const mensaje = { from: de, id, timestamp: String(Math.floor(Date.now() / 1000)), type: tipo };
   if (tipo === "text") mensaje.text = { body: texto };
-  if (tipo === "audio") mensaje.audio = { mime_type: "audio/ogg; codecs=opus", id: "audio-simulado", voice: true };
+  if (tipo === "audio") {
+    mensaje.audio = { mime_type: audio.mimeType ?? "audio/ogg; codecs=opus", id: audio.id ?? "audio-simulado", voice: true };
+  }
   return {
     object: "whatsapp_business_account",
     entry: [

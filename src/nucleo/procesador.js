@@ -56,7 +56,21 @@ export function crearProcesador({
   pausas = crearPausas(),
   pendientes = crearPedidosPendientes(),
   memoria = new MemorySaver(),
+  cobros, // para reemplazar Mercado Pago en las pruebas
 }) {
+  // Links de pago creados en el turno actual de cada charla. POR QUÉ: la IA a
+  // veces resume o corta un link largo. Si en su respuesta no está el link
+  // exacto, el código lo agrega al final. Así el cliente siempre lo recibe.
+  const enlacesPorHilo = new Map();
+  const enlaces = {
+    guardar: (hiloId, link) => enlacesPorHilo.set(hiloId, link),
+    tomar: (hiloId) => {
+      const link = enlacesPorHilo.get(hiloId);
+      enlacesPorHilo.delete(hiloId);
+      return link ?? null;
+    },
+  };
+
   const agentes = new Map(); // un agente por empresa, se arma la primera vez que hace falta
   const colas = new Map(); // una fila de espera por conversación
   const turnos = new Map(); // cuántos mensajes mandó cada cliente en su charla
@@ -73,6 +87,8 @@ export function crearProcesador({
           pausas,
           pendientes,
           memoria,
+          cobros,
+          enlaces,
         })
       );
     }
@@ -104,6 +120,7 @@ export function crearProcesador({
       const turno = (turnos.get(hiloId) ?? 0) + 1;
       turnos.set(hiloId, turno);
       const config = { configurable: { thread_id: hiloId }, context: { telefono, nombre, hiloId, turno } };
+      enlaces.tomar(hiloId); // por si quedó alguno de un turno anterior que terminó con error
       try {
         const agente = agenteDe(empresa);
         let resultado = await agente.invoke({ messages: [{ role: "user", content: texto }] }, config);
@@ -112,6 +129,10 @@ export function crearProcesador({
           console.warn(`[${empresa.id}] La IA terminó sin texto con ${telefono}; se le pide la respuesta de nuevo.`);
           resultado = await agente.invoke({ messages: [{ role: "user", content: RECORDATORIO_RESPUESTA_VACIA }] }, config);
           respuesta = respuestaDelTurno(resultado.messages);
+        }
+        const link = enlaces.tomar(hiloId);
+        if (respuesta && link && !respuesta.includes(link)) {
+          respuesta = `${respuesta}\n\nLink para pagar con Mercado Pago:\n${link}`;
         }
         return respuesta || MENSAJE_ERROR;
       } catch (error) {

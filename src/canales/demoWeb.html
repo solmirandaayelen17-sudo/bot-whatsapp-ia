@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo del asistente · Siren IA</title>
+<style>
+  :root {
+    --fondo-1: #14162b;
+    --fondo-2: #1f2350;
+    --acento: #4fd1b5;
+    --acento-osc: #179b80;
+    --texto-claro: #eef0ff;
+    --texto-suave: #a9aed6;
+    --chat-fondo: #efeae2;
+    --burbuja-bot: #ffffff;
+    --burbuja-cliente: #d8f5ec;
+    --tinta: #1d2230;
+    --tinta-suave: #667085;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: radial-gradient(1200px 700px at 15% 10%, #2b3070 0%, transparent 60%),
+                linear-gradient(160deg, var(--fondo-1), var(--fondo-2));
+    color: var(--texto-claro);
+    display: flex; align-items: center; justify-content: center;
+    gap: 72px; padding: 24px;
+  }
+
+  /* ---- Texto de presentación (a la izquierda) ---- */
+  .presentacion { max-width: 420px; }
+  .marca { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; color: var(--acento); font-size: 18px; }
+  .marca .punto { width: 12px; height: 12px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 5px rgba(79,209,181,.18); }
+  .presentacion h1 { font-size: 40px; line-height: 1.12; margin: 18px 0 16px; font-weight: 700; }
+  .presentacion p { color: var(--texto-suave); font-size: 18px; line-height: 1.5; }
+  .ventajas { list-style: none; padding: 0; margin-top: 26px; display: grid; gap: 14px; }
+  .ventajas li { display: flex; gap: 12px; align-items: flex-start; font-size: 17px; line-height: 1.4; }
+  .ventajas li::before { content: ""; flex: 0 0 22px; height: 22px; border-radius: 50%; margin-top: 1px;
+    background: var(--acento) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2314162b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/14px no-repeat; }
+
+  /* ---- Celular ---- */
+  .columna-celular { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .celular {
+    width: 390px; height: min(800px, calc(100vh - 70px)); min-height: 480px;
+    background: #0b0c14; border-radius: 48px; padding: 12px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 0 0 2px #2a2d40;
+  }
+  .pantalla { height: 100%; border-radius: 38px; overflow: hidden; display: flex; flex-direction: column; background: var(--chat-fondo); position: relative; }
+  .barra-estado { height: 34px; background: var(--acento-osc); display: flex; align-items: center; justify-content: space-between; padding: 0 26px; font-size: 13px; font-weight: 600; color: #fff; }
+  .barra-estado .isla { width: 96px; height: 24px; background: #0b0c14; border-radius: 14px; }
+  .cabecera { background: var(--acento-osc); color: #fff; display: flex; align-items: center; gap: 12px; padding: 8px 16px 12px; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: #fff; color: var(--acento-osc); display: grid; place-items: center; font-weight: 700; font-size: 16px; flex: none; }
+  .cabecera .nombre { font-weight: 600; font-size: 16.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cabecera .estado { font-size: 13px; opacity: .88; }
+
+  .chat {
+    flex: 1; overflow-y: auto; padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 6px;
+    background-color: var(--chat-fondo);
+    background-image: radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  .chip { align-self: center; background: #fff8d6; color: #5c5330; font-size: 12.5px; line-height: 1.4; text-align: center; padding: 7px 12px; border-radius: 9px; max-width: 88%; margin: 4px 0 8px; box-shadow: 0 1px 1px rgba(0,0,0,.06); }
+  .chip.dia { background: #fff; color: var(--tinta-suave); padding: 4px 12px; }
+  .chip.aviso { background: #e7ecff; color: #36407a; }
+
+  .burbuja { max-width: 82%; padding: 7px 10px 6px; border-radius: 10px; font-size: 15px; line-height: 1.42; color: var(--tinta); white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 1px 1px rgba(0,0,0,.08); position: relative; animation: entrar .18s ease-out; }
+  .burbuja .hora { float: right; font-size: 11px; color: var(--tinta-suave); margin: 8px 0 -4px 10px; }
+  .bot { align-self: flex-start; background: var(--burbuja-bot); border-top-left-radius: 3px; }
+  .cliente { align-self: flex-end; background: var(--burbuja-cliente); border-top-right-radius: 3px; }
+  .seguido.bot { border-top-left-radius: 10px; }
+  .seguido.cliente { border-top-right-radius: 10px; }
+  @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .escribiendo { align-self: flex-start; background: #fff; border-radius: 10px; border-top-left-radius: 3px; padding: 12px 14px; display: none; gap: 5px; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+  .escribiendo.visible { display: flex; }
+  .escribiendo span { width: 7px; height: 7px; border-radius: 50%; background: #9aa1b5; animation: rebote 1.2s infinite; }
+  .escribiendo span:nth-child(2) { animation-delay: .15s; }
+  .escribiendo span:nth-child(3) { animation-delay: .3s; }
+  @keyframes rebote { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+  .entrada { display: flex; gap: 8px; padding: 8px 10px 14px; background: transparent; align-items: flex-end; }
+  .entrada textarea {
+    flex: 1; resize: none; border: none; outline: none; border-radius: 22px; padding: 11px 16px; font: inherit; font-size: 15px;
+    max-height: 110px; background: #fff; color: var(--tinta); box-shadow: 0 1px 1px rgba(0,0,0,.08);
+  }
+  .entrada button { width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--acento-osc); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; transition: transform .1s, opacity .2s; }
+  .entrada button:active { transform: scale(.94); }
+  .entrada button:disabled { opacity: .45; cursor: default; }
+
+  /* Grabación de nota de voz */
+  .grabando { flex: 1; display: none; align-items: center; gap: 10px; background: #fff; border-radius: 23px; height: 46px; padding: 0 6px 0 16px; color: var(--tinta); font-size: 15px; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+  .entrada.modo-grabando textarea { display: none; }
+  .entrada.modo-grabando .grabando { display: flex; }
+  .punto-rojo { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; animation: latir 1s infinite; flex: none; }
+  @keyframes latir { 50% { opacity: .25; } }
+  .grabando .tiempo { font-variant-numeric: tabular-nums; }
+  .grabando .leyenda { color: var(--tinta-suave); font-size: 14px; }
+  .entrada .cancelar { margin-left: auto; width: auto; height: 34px; padding: 0 12px; border-radius: 17px; background: none; color: #c0392b; font: inherit; font-size: 14px; }
+  .entrada .cancelar:hover { background: #fdecea; }
+
+  /* Nota de voz dentro del chat */
+  .nota { display: flex; align-items: center; gap: 10px; min-width: 220px; padding: 2px 0; }
+  .nota .play { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--acento-osc); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .nota .onda { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; }
+  .nota .onda i { display: block; flex: 1; max-width: 4px; min-height: 3px; border-radius: 2px; background: #9cc9bd; }
+  .nota .onda i.oido { background: var(--acento-osc); }
+  .nota .duracion { font-size: 12px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .burbuja a { color: #0b66c3; text-decoration: underline; overflow-wrap: anywhere; }
+  .burbuja a.tarjeta-pago { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 10px; border-radius: 8px; background: #f0f4ff; color: var(--tinta); text-decoration: none; white-space: normal; border-left: 4px solid #009ee3; }
+  .tarjeta-pago:hover { background: #e4ecff; }
+  .tp-icono { width: 32px; height: 32px; border-radius: 50%; background: #009ee3; color: #fff; display: grid; place-items: center; font-weight: 700; flex: none; }
+  .tarjeta-pago b { display: block; font-size: 14px; }
+  .tarjeta-pago small { display: block; font-size: 12px; color: var(--tinta-suave); }
+  .transcripcion { display: block; font-size: 13px; line-height: 1.4; color: #4b5563; font-style: italic; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,.07); }
+
+  .controles { display: flex; gap: 18px; font-size: 13px; }
+  .controles button { background: none; border: none; color: var(--texto-suave); cursor: pointer; font: inherit; padding: 4px 2px; }
+  .controles button:hover { color: var(--texto-claro); text-decoration: underline; }
+
+  /* Pantallas medianas (o con mucho zoom): solo el celular. */
+  @media (max-width: 1080px) {
+    body { gap: 0; }
+    .presentacion { display: none; }
+  }
+  /* Un celular de verdad: el chat ocupa toda la pantalla. */
+  @media (max-width: 560px) {
+    body { gap: 0; padding: 0; }
+    .controles { display: none; }
+    .celular { width: 100%; height: 100vh; min-height: 0; border-radius: 0; padding: 0; box-shadow: none; }
+    .pantalla { border-radius: 0; }
+    .barra-estado { display: none; }
+  }
+</style>
+</head>
+<body>
+  <section class="presentacion">
+    <div class="marca"><span class="punto"></span>Siren IA</div>
+    <h1>Un asistente que atiende tu WhatsApp como vos.</h1>
+    <p>Probalo como si fueras un cliente. Las respuestas salen de la planilla del negocio, en el momento.</p>
+    <ul class="ventajas">
+      <li>Responde con tus precios y tu stock reales.</li>
+      <li>Toma pedidos y los anota en tu planilla.</li>
+      <li>Te pasa la charla cuando hace falta una persona.</li>
+      <li>Atiende de día, de noche y los domingos.</li>
+    </ul>
+  </section>
+
+  <div class="columna-celular">
+    <div class="celular">
+      <div class="pantalla">
+        <div class="barra-estado"><span id="reloj">9:41</span><span class="isla"></span><span>5G ▮▮▮</span></div>
+        <div class="cabecera">
+          <div class="avatar" id="avatar">··</div>
+          <div style="min-width:0">
+            <div class="nombre" id="nombre">Cargando…</div>
+            <div class="estado" id="estado">en línea</div>
+          </div>
+        </div>
+        <div class="chat" id="chat">
+          <div class="chip dia">Hoy</div>
+          <div class="chip">Demo de Siren IA. Escribí o mandá un audio como si fueras un cliente del negocio.</div>
+          <div class="escribiendo" id="escribiendo"><span></span><span></span><span></span></div>
+        </div>
+        <form class="entrada" id="formulario" autocomplete="off">
+          <textarea id="texto" rows="1" placeholder="Escribí un mensaje" maxlength="1000"></textarea>
+          <div class="grabando" aria-live="polite">
+            <span class="punto-rojo"></span>
+            <span class="tiempo" id="tiempo">0:00</span>
+            <span class="leyenda">Grabando…</span>
+            <button type="button" class="cancelar" id="cancelar">Cancelar</button>
+          </div>
+          <button id="enviar" type="submit" aria-label="Grabar audio">
+            <svg id="icono-mic" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+            <svg id="icono-enviar" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12l-11.61 1.87z"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="controles">
+      <button type="button" id="nuevo">Nuevo cliente</button>
+      <button type="button" id="reanudar">Reactivar el bot</button>
+    </div>
+  </div>
+
+<script>
+  const chat = document.getElementById("chat");
+  const escribiendo = document.getElementById("escribiendo");
+  const estado = document.getElementById("estado");
+  const formulario = document.getElementById("formulario");
+  const campo = document.getElementById("texto");
+  const boton = document.getElementById("enviar");
+  let ultimoAutor = null;
+  let ocupado = false;
+
+  const hora = () => new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  function actualizarReloj() { document.getElementById("reloj").textContent = hora(); }
+  actualizarReloj();
+  setInterval(actualizarReloj, 30000);
+
+  fetch("/api/info").then((r) => r.json()).then((info) => {
+    document.getElementById("nombre").textContent = info.nombre;
+    const iniciales = info.nombre.split(/\s+/).filter((p) => p.length > 2).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+    document.getElementById("avatar").textContent = iniciales || "IA";
+    document.title = `${info.nombre} · Demo Siren IA`;
+  });
+
+  // Pasa el formato de WhatsApp (*negrita*, _cursiva_) a la pantalla sin usar innerHTML.
+  // Los links (https://...) se pueden tocar. Devuelve los links de Mercado Pago que encontró.
+  function agregarConFormato(contenedor, texto) {
+    const pagos = [];
+    for (const trozo of texto.split(/(https:\/\/[^\s<>"]+)/g)) {
+      if (!trozo) continue;
+      if (!trozo.startsWith("https://")) {
+        agregarTextoConEstilo(contenedor, trozo);
+        continue;
+      }
+      const link = trozo.replace(/[.,;:!?)*_]+$/, "");
+      const a = document.createElement("a");
+      a.href = link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = link;
+      contenedor.appendChild(a);
+      if (trozo.length > link.length) contenedor.appendChild(document.createTextNode(trozo.slice(link.length)));
+      try {
+        if (/(^|\.)mercadopago\./.test(new URL(link).hostname)) pagos.push(link);
+      } catch {}
+    }
+    return pagos;
+  }
+
+  function agregarTextoConEstilo(contenedor, texto) {
+    const partes = texto.split(/(\*[^*\n]+\*|_[^_\n]+_)/g);
+    for (const parte of partes) {
+      if (!parte) continue;
+      if (/^\*[^*\n]+\*$/.test(parte)) {
+        const b = document.createElement("strong");
+        b.textContent = parte.slice(1, -1);
+        contenedor.appendChild(b);
+      } else if (/^_[^_\n]+_$/.test(parte)) {
+        const i = document.createElement("em");
+        i.textContent = parte.slice(1, -1);
+        contenedor.appendChild(i);
+      } else {
+        contenedor.appendChild(document.createTextNode(parte));
+      }
+    }
+  }
+
+  function agregarBurbuja(autor, texto) {
+    const div = document.createElement("div");
+    div.className = `burbuja ${autor}` + (ultimoAutor === autor ? " seguido" : "");
+    const pagos = agregarConFormato(div, texto);
+    // Como en WhatsApp, un link conocido se muestra con una "vista previa" para tocar.
+    for (const link of pagos.slice(0, 1)) {
+      const tarjeta = document.createElement("a");
+      tarjeta.className = "tarjeta-pago";
+      tarjeta.href = link;
+      tarjeta.target = "_blank";
+      tarjeta.rel = "noopener noreferrer";
+      const icono = document.createElement("span");
+      icono.className = "tp-icono";
+      icono.textContent = "$";
+      const textos = document.createElement("span");
+      const titulo = document.createElement("b");
+      titulo.textContent = "Pagar con Mercado Pago";
+      const dominio = document.createElement("small");
+      dominio.textContent = new URL(link).hostname.replace(/^www\./, "");
+      textos.append(titulo, dominio);
+      tarjeta.append(icono, textos);
+      div.appendChild(tarjeta);
+    }
+    const h = document.createElement("span");
+    h.className = "hora";
+    h.textContent = hora();
+    div.appendChild(h);
+    chat.insertBefore(div, escribiendo);
+    ultimoAutor = autor;
+    bajar();
+  }
+
+  function agregarAviso(texto) {
+    const div = document.createElement("div");
+    div.className = "chip aviso";
+    div.textContent = texto;
+    chat.insertBefore(div, escribiendo);
+    ultimoAutor = null;
+    bajar();
+  }
+
+  const bajar = () => { chat.scrollTop = chat.scrollHeight; };
+
+  function mostrarEscribiendo(si) {
+    escribiendo.classList.toggle("visible", si);
+    estado.textContent = si ? "escribiendo…" : "en línea";
+    if (si) chat.appendChild(escribiendo);
+    bajar();
+  }
+
+  // Manda algo al bot y muestra la respuesta. "pedir" hace el fetch;
+  // "alTranscribir" recibe lo que el bot entendió de un audio.
+  async function conversar(pedir, alTranscribir = () => {}) {
+    ocupado = true;
+    actualizarBoton();
+    // Un toque de espera antes de "escribiendo…", como una persona real.
+    const demora = setTimeout(() => mostrarEscribiendo(true), 500);
+    try {
+      const r = await pedir().then((x) => x.json());
+      clearTimeout(demora);
+      mostrarEscribiendo(false);
+      if (r.transcripcion) alTranscribir(r.transcripcion);
+      if (r.tipo === "respuesta") agregarBurbuja("bot", r.texto);
+      else if (r.tipo === "pausa") agregarAviso("La charla la sigue una persona del negocio.");
+      else if (r.tipo === "audio-largo") agregarAviso("El audio es demasiado largo.");
+      else if (r.tipo === "error") agregarAviso("El bot tuvo un problema técnico. Probá de nuevo.");
+      else agregarAviso("El bot no respondió. Probá de nuevo.");
+    } catch {
+      clearTimeout(demora);
+      mostrarEscribiendo(false);
+      agregarAviso("No hay conexión con el bot. ¿Sigue corriendo npm run demo?");
+    } finally {
+      ocupado = false;
+      actualizarBoton();
+      campo.focus();
+    }
+  }
+
+  function enviar(texto) {
+    agregarBurbuja("cliente", texto);
+    return conversar(() =>
+      fetch("/api/mensaje", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) }),
+    );
+  }
+
+  // ---------- Notas de voz ----------
+  const DURACION_MAXIMA = 120; // segundos
+  let grabacion = null; // { recorder, stream, partes, inicio, niveles, reloj, contexto }
+
+  const formatoTiempo = (seg) => `${Math.floor(seg / 60)}:${String(Math.floor(seg % 60)).padStart(2, "0")}`;
+
+  function tipoDeGrabacion() {
+    for (const t of ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/webm", "audio/mp4"]) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return "";
+  }
+
+  async function empezarGrabacion() {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      agregarAviso("Este navegador no permite grabar audio. Probá con Chrome o Edge.");
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      agregarAviso("No pude usar el micrófono. Dale permiso en el candado de la barra de direcciones.");
+      return;
+    }
+    const tipo = tipoDeGrabacion();
+    const recorder = new MediaRecorder(stream, tipo ? { mimeType: tipo } : undefined);
+    const g = { recorder, stream, partes: [], inicio: Date.now(), niveles: [], contexto: null, enviar: false };
+    recorder.ondataavailable = (e) => e.data.size && g.partes.push(e.data);
+    recorder.onstop = () => terminarGrabacion(g);
+
+    // Medimos el volumen mientras grabás, para dibujar la "onda" de la nota de voz.
+    try {
+      g.contexto = new AudioContext();
+      const analizador = g.contexto.createAnalyser();
+      analizador.fftSize = 512;
+      g.contexto.createMediaStreamSource(stream).connect(analizador);
+      const muestras = new Uint8Array(analizador.fftSize);
+      g.medidor = setInterval(() => {
+        analizador.getByteTimeDomainData(muestras);
+        let suma = 0;
+        for (const v of muestras) suma += ((v - 128) / 128) ** 2;
+        g.niveles.push(Math.sqrt(suma / muestras.length));
+      }, 80);
+    } catch {}
+
+    g.reloj = setInterval(() => {
+      const seg = (Date.now() - g.inicio) / 1000;
+      document.getElementById("tiempo").textContent = formatoTiempo(seg);
+      if (seg >= DURACION_MAXIMA) detenerGrabacion(true);
+    }, 200);
+    document.getElementById("tiempo").textContent = "0:00";
+    recorder.start();
+    grabacion = g;
+    formulario.classList.add("modo-grabando");
+    actualizarBoton();
+  }
+
+  function detenerGrabacion(enviarla) {
+    const g = grabacion;
+    if (!g) return;
+    grabacion = null;
+    g.enviar = enviarla;
+    g.duracion = (Date.now() - g.inicio) / 1000;
+    clearInterval(g.reloj);
+    clearInterval(g.medidor);
+    if (g.recorder.state !== "inactive") g.recorder.stop();
+    formulario.classList.remove("modo-grabando");
+    actualizarBoton();
+  }
+
+  function terminarGrabacion(g) {
+    g.stream.getTracks().forEach((t) => t.stop());
+    g.contexto?.close().catch(() => {});
+    if (!g.enviar) return;
+    if (g.duracion < 0.6) {
+      agregarAviso("El audio fue muy corto. Tocá el micrófono, hablá y después tocá enviar.");
+      return;
+    }
+    const blob = new Blob(g.partes, { type: g.recorder.mimeType || "audio/webm" });
+    const burbuja = agregarNotaDeVoz(blob, g.duracion, g.niveles);
+    conversar(
+      () => fetch("/api/audio", { method: "POST", headers: { "Content-Type": blob.type || "audio/webm" }, body: blob }),
+      (texto) => {
+        const t = document.createElement("span");
+        t.className = "transcripcion";
+        t.textContent = `“${texto}”`;
+        burbuja.insertBefore(t, burbuja.querySelector(".hora"));
+        bajar();
+      },
+    );
+  }
+
+  // Arma la burbuja de la nota de voz: botón de play, onda y duración.
+  function agregarNotaDeVoz(blob, duracion, niveles) {
+    const div = document.createElement("div");
+    div.className = "burbuja cliente" + (ultimoAutor === "cliente" ? " seguido" : "");
+    div.style.whiteSpace = "normal";
+    const nota = document.createElement("div");
+    nota.className = "nota";
+
+    const audio = new Audio(URL.createObjectURL(blob));
+    const play = document.createElement("button");
+    play.type = "button";
+    play.className = "play";
+    play.setAttribute("aria-label", "Escuchar");
+    const iconoPlay = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
+    const iconoPausa = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+    play.innerHTML = iconoPlay;
+    play.addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
+    audio.addEventListener("play", () => (play.innerHTML = iconoPausa));
+    audio.addEventListener("pause", () => (play.innerHTML = iconoPlay));
+    audio.addEventListener("ended", () => (play.innerHTML = iconoPlay));
+
+    const onda = document.createElement("div");
+    onda.className = "onda";
+    const BARRAS = 30;
+    const maximo = Math.max(0.02, ...niveles);
+    for (let i = 0; i < BARRAS; i++) {
+      const desde = Math.floor((i * niveles.length) / BARRAS);
+      const hasta = Math.max(desde + 1, Math.floor(((i + 1) * niveles.length) / BARRAS));
+      const tramo = niveles.slice(desde, hasta);
+      // La raíz hace que las partes suaves de la voz también se vean.
+      const nivel = tramo.length ? Math.sqrt(Math.max(...tramo) / maximo) : 0.3 + 0.4 * Math.abs(Math.sin(i * 1.7));
+      const barra = document.createElement("i");
+      barra.style.height = `${Math.round(4 + nivel * 22)}px`;
+      onda.appendChild(barra);
+    }
+    audio.addEventListener("timeupdate", () => {
+      const avance = audio.currentTime / (audio.duration && isFinite(audio.duration) ? audio.duration : duracion);
+      [...onda.children].forEach((b, i) => b.classList.toggle("oido", i / BARRAS < avance));
+    });
+    audio.addEventListener("ended", () => [...onda.children].forEach((b) => b.classList.remove("oido")));
+
+    const dur = document.createElement("span");
+    dur.className = "duracion";
+    dur.textContent = formatoTiempo(duracion);
+
+    nota.append(play, onda, dur);
+    div.appendChild(nota);
+    const h = document.createElement("span");
+    h.className = "hora";
+    h.textContent = hora();
+    div.appendChild(h);
+    chat.insertBefore(div, escribiendo);
+    ultimoAutor = "cliente";
+    bajar();
+    return div;
+  }
+
+  // El botón redondo: micrófono si no escribiste nada; avión de papel si hay texto o estás grabando.
+  function actualizarBoton() {
+    const mandar = grabacion || campo.value.trim().length > 0;
+    document.getElementById("icono-mic").style.display = mandar ? "none" : "";
+    document.getElementById("icono-enviar").style.display = mandar ? "" : "none";
+    boton.setAttribute("aria-label", grabacion ? "Enviar audio" : mandar ? "Enviar" : "Grabar audio");
+    boton.disabled = ocupado;
+  }
+
+  document.getElementById("cancelar").addEventListener("click", () => detenerGrabacion(false));
+
+  formulario.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (ocupado) return;
+    if (grabacion) return detenerGrabacion(true);
+    const texto = campo.value.trim();
+    if (!texto) return empezarGrabacion();
+    campo.value = "";
+    ajustarAltura();
+    actualizarBoton();
+    enviar(texto);
+  });
+
+  // Enter manda; Shift+Enter hace un salto de línea.
+  campo.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      // Enter solo manda texto: con el campo vacío no arranca a grabar.
+      if (campo.value.trim()) formulario.requestSubmit();
+    }
+  });
+  function ajustarAltura() {
+    campo.style.height = "auto";
+    campo.style.height = Math.min(campo.scrollHeight, 110) + "px";
+  }
+  campo.addEventListener("input", () => {
+    ajustarAltura();
+    actualizarBoton();
+  });
+
+  document.getElementById("nuevo").addEventListener("click", async () => {
+    await fetch("/api/nuevo", { method: "POST" });
+    for (const el of [...chat.querySelectorAll(".burbuja, .chip.aviso")]) el.remove();
+    ultimoAutor = null;
+    campo.focus();
+  });
+  document.getElementById("reanudar").addEventListener("click", async () => {
+    await fetch("/api/reanudar", { method: "POST" });
+    agregarAviso("El bot volvió a atender esta charla.");
+  });
+
+  campo.focus();
+</script>
+</body>
+</html>

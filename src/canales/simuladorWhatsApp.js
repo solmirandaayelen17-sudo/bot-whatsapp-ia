@@ -18,6 +18,7 @@ export async function crearSimulador({
   nombre = "Cliente de prueba",
   esperaMaximaMs = 120_000,
   alLlegarTarde = () => {},
+  transcribir = null, // para entender audios (crearTranscriptor); sin esto, el bot pide que le escriban
 }) {
   // Claves inventadas para esta corrida: no hace falta tocar el .env.
   const appSecret = crypto.randomBytes(16).toString("hex");
@@ -27,14 +28,25 @@ export async function crearSimulador({
   let conversacion = 0;
   let pendiente = null; // lo que está esperando la respuesta del mensaje actual
   let ultimoCuerpo = null;
+  let ultimaTranscripcion = null;
+  const audios = new Map(); // los audios "subidos a Meta", por id, para que el bot los descargue
 
   const telefonoActual = () => String(BigInt(telefonoBase) + BigInt(conversacion));
 
   function entregar(resultado) {
     const p = pendiente;
     pendiente = null;
-    if (p) p(resultado);
-    else alLlegarTarde(resultado);
+    const completo = ultimaTranscripcion ? { ...resultado, transcripcion: ultimaTranscripcion } : resultado;
+    if (p) p(completo);
+    else alLlegarTarde(completo);
+  }
+
+  // Reemplaza a la descarga desde Meta: devuelve el audio que guardamos al mandarlo.
+  async function descargarMedia({ mediaId }) {
+    const audio = audios.get(mediaId);
+    if (!audio) throw new Error(`No existe el audio ${mediaId}`);
+    audios.delete(mediaId);
+    return { datos: audio.datos, mimeType: audio.mimeType, tamano: audio.datos.length };
   }
 
   // Reemplaza al envío real a Meta: guarda lo que el bot iba a mandar.
@@ -45,6 +57,7 @@ export async function crearSimulador({
   // Envuelve al procesador para enterarnos si el bot decidió no contestar
   // (por ejemplo, porque derivó la charla a una persona).
   async function procesarEspiado(datos) {
+    ultimaTranscripcion = datos.transcripcion ?? null;
     try {
       const respuesta = await procesar(datos);
       if (respuesta === null) entregar({ tipo: "pausa" });
@@ -62,6 +75,8 @@ export async function crearSimulador({
       empresasPorNumero: new Map([[phoneNumberId, empresa]]),
       procesar: procesarEspiado,
       enviarTexto,
+      descargarMedia,
+      transcribir,
       verifyToken,
       appSecret,
     }),
@@ -113,9 +128,17 @@ export async function crearSimulador({
       return r.status === 200 && (await r.text()) === desafio;
     },
 
-    // Un cliente escribe (texto) o manda una nota de voz (tipo "audio").
-    async mandar({ texto, tipo = "text" }) {
-      const aviso = armarAvisoDeMeta({ phoneNumberId, de: telefonoActual(), nombre, texto, tipo });
+    // Un cliente escribe (texto) o manda una nota de voz (tipo "audio", con
+    // audio: { datos: Buffer, mimeType }).
+    async mandar({ texto, tipo = "text", audio = null }) {
+      ultimaTranscripcion = null;
+      let datosAudio = {};
+      if (tipo === "audio" && audio?.datos) {
+        const id = "audio-" + crypto.randomBytes(6).toString("hex");
+        audios.set(id, { datos: audio.datos, mimeType: audio.mimeType });
+        datosAudio = { id, mimeType: audio.mimeType };
+      }
+      const aviso = armarAvisoDeMeta({ phoneNumberId, de: telefonoActual(), nombre, texto, tipo, audio: datosAudio });
       const cuerpo = JSON.stringify(aviso);
       ultimoCuerpo = cuerpo;
       return mandarYEsperar(cuerpo, firmarCuerpo(cuerpo, appSecret), esperaMaximaMs);

@@ -9,6 +9,8 @@
 // No hace falta completar las claves de WhatsApp del .env: usa claves inventadas.
 
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { cargarEmpresas } from "./config/empresas.js";
@@ -16,6 +18,7 @@ import { crearProcesador } from "./nucleo/procesador.js";
 import { crearModeloGemini, crearModelosRespaldoGemini, verificarClaveGemini } from "./agente/modelo.js";
 import { crearFuente } from "./datos/crearFuente.js";
 import { crearSimulador } from "./canales/simuladorWhatsApp.js";
+import { crearTranscriptor } from "./agente/audio.js";
 
 const color = output.isTTY ? (codigo) => (t) => `\x1b[${codigo}m${t}\x1b[0m` : () => (t) => t;
 const gris = color("2");
@@ -40,6 +43,7 @@ const { procesar, pausas } = crearProcesador({
 });
 
 function mostrarResultado(r) {
+  if (r.transcripcion) console.log(gris(`  (el bot escuchó: "${r.transcripcion}")`));
   if (r.tipo === "respuesta") console.log(`${verde(negrita("Bot"))} ${gris(`(WhatsApp a +${r.para})`)}: ${r.texto}\n`);
   else if (r.tipo === "pausa") console.log(gris("(el bot no contesta: la charla la sigue una persona. Usá /reanudar)\n"));
   else if (r.tipo === "error") console.log(rojo(`(error del bot: ${r.error?.message ?? r.error})\n`));
@@ -49,6 +53,7 @@ function mostrarResultado(r) {
 const sim = await crearSimulador({
   empresa,
   procesar,
+  transcribir: crearTranscriptor(),
   alLlegarTarde: (r) => {
     console.log(gris("\n(llegó tarde la respuesta a un mensaje anterior)"));
     mostrarResultado(r);
@@ -61,7 +66,30 @@ console.log(gris(`Datos: ${crearFuente(empresa).descripcion}`));
 console.log(gris(`Webhook: ${sim.url}  ·  número del negocio (phoneNumberId): ${sim.phoneNumberId}`));
 const verificado = await sim.verificarWebhook();
 console.log(verificado ? verde("✔ Verificación del webhook (el paso que hace Meta al conectarlo): OK") : rojo("✘ La verificación del webhook falló"));
-console.log(gris("Comandos: /nuevo  /reanudar  /audio  /repetido  /trucho  /salir\n"));
+console.log(gris("Comandos: /audio <archivo>  /nuevo  /reanudar  /repetido  /trucho  /salir\n"));
+
+// /audio <archivo>: lee una nota de voz de tu compu (por ejemplo, un audio de
+// WhatsApp que te mandaste a vos misma). Podés arrastrar el archivo a la terminal.
+const TIPOS = { ".ogg": "audio/ogg", ".opus": "audio/ogg", ".mp3": "audio/mpeg", ".m4a": "audio/m4a", ".aac": "audio/aac", ".wav": "audio/wav", ".webm": "audio/webm", ".flac": "audio/flac" };
+function leerAudio(ruta) {
+  const limpia = ruta.replace(/^& /, "").replace(/^["']|["']$/g, "").trim();
+  if (!limpia) {
+    console.log(gris("Usá /audio y la ruta del archivo, por ejemplo: /audio C:\\Users\\Sol\\Downloads\\nota.ogg"));
+    console.log(gris("(podés arrastrar el archivo a la terminal). Con micrófono es más fácil en: npm run demo -- <id>\n"));
+    return null;
+  }
+  const tipo = TIPOS[path.extname(limpia).toLowerCase()];
+  if (!tipo) {
+    console.log(rojo(`(no reconozco ese tipo de audio; probá con .ogg, .opus, .mp3, .m4a, .wav o .webm)\n`));
+    return null;
+  }
+  try {
+    return { datos: fs.readFileSync(limpia), mimeType: tipo, nombre: path.basename(limpia) };
+  } catch {
+    console.log(rojo(`(no encuentro el archivo ${limpia})\n`));
+    return null;
+  }
+}
 
 const rl = readline.createInterface({ input, output });
 const preguntar = () => {
@@ -112,9 +140,14 @@ async function atender(texto) {
     return;
   }
 
-  const esAudio = texto === "/audio";
-  if (esAudio) console.log(gris("(el cliente manda una nota de voz)"));
-  const r = await sim.mandar(esAudio ? { tipo: "audio" } : { texto });
+  let mensaje = { texto };
+  if (texto === "/audio" || texto.startsWith("/audio ")) {
+    const audio = leerAudio(texto.slice("/audio".length).trim());
+    if (!audio) return;
+    console.log(gris(`(el cliente manda una nota de voz: ${audio.nombre})`));
+    mensaje = { tipo: "audio", audio };
+  }
+  const r = await sim.mandar(mensaje);
   if (r.tipo === "rechazado") {
     console.log(rojo(`(el webhook rechazó el aviso: respuesta ${r.estado})\n`));
     return;
@@ -122,3 +155,4 @@ async function atender(texto) {
   console.log(gris(`  aviso firmado → webhook: ${r.estado} OK`));
   mostrarResultado(r);
 }
+

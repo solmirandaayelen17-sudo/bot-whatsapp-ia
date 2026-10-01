@@ -13,6 +13,8 @@
 import { tool } from "langchain";
 import * as z from "zod";
 import { buscarEnCatalogo, validarPedido, formatearPesos } from "../datos/productos.js";
+import { crearLinkMercadoPago, HORAS_DE_VALIDEZ } from "../pagos/mercadoPago.js";
+import { mensajeDeError } from "../nucleo/errores.js";
 
 // Formato fijo de 24 horas ("29/09/2026, 14:58"). Sin esto, algunas compus
 // (por ejemplo Windows) escriben "02:58" para las 14:58, sin el "p. m.".
@@ -34,7 +36,11 @@ function nuevoIdPedido() {
 
 // runtime.context trae los datos de ESTA conversación (teléfono del cliente,
 // nombre, id del hilo y número de turno). Se los pasa el procesador en cada mensaje.
-export function crearHerramientas({ empresa, fuente, pausas, pendientes }) {
+// cobros.crearLink: arma el link de pago (Mercado Pago). Se puede reemplazar en las pruebas.
+// enlaces: donde se guarda el link para que el procesador se asegure de que llegue al cliente.
+export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros = { crearLink: crearLinkMercadoPago }, enlaces = null }) {
+  const cobraConMercadoPago = empresa.herramientas.includes("cobrar_mercado_pago");
+
   const buscarProductos = tool(
     async ({ consulta }) => {
       const productos = await fuente.listarProductos();
@@ -150,6 +156,25 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes }) {
       const detalle = v.lineas
         .map((l) => `${l.cantidad} x ${l.producto.nombre} (${formatearPesos(l.producto.precio)} c/u)`)
         .join("; ");
+
+      // El link de pago se arma con los precios validados recién, no con lo que diga la IA.
+      // Si Mercado Pago falla, el pedido se anota igual y el negocio cobra por otro lado.
+      let link = "";
+      if (cobraConMercadoPago) {
+        try {
+          const lineas = v.lineas.map((l) => ({
+            codigo: l.producto.codigo,
+            nombre: l.producto.nombre,
+            cantidad: l.cantidad,
+            precio: l.producto.precio,
+          }));
+          ({ link } = await cobros.crearLink({ empresa, pedido: { id, lineas } }));
+          if (link && ctx.hiloId) enlaces?.guardar(ctx.hiloId, link);
+        } catch (error) {
+          console.error(`[${empresa.id}] No pude crear el link de Mercado Pago del pedido ${id}: ${mensajeDeError(error)}`);
+        }
+      }
+
       await fuente.agregarRegistro("Pedidos", {
         id,
         fecha: fechaArgentina(),
@@ -159,14 +184,23 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes }) {
         total: v.total,
         modalidad: pendiente.modalidad,
         notas: notas ?? "",
-        estado: "nuevo (a confirmar)",
+        estado: link ? "esperando pago" : "nuevo (a confirmar)",
+        pago: link,
       });
       pendientes.borrar(ctx.hiloId);
+
+      let instruccion = "Pedido anotado. Pasale el número de pedido al cliente y aclarale que el negocio lo va a confirmar.";
+      if (link) {
+        instruccion = `Pedido anotado. Pasale al cliente el número de pedido y el link para pagar con Mercado Pago, copiado exacto y completo, solo en su renglón y sin asteriscos. Aclarale que el link vence en ${HORAS_DE_VALIDEZ} horas.`;
+      } else if (cobraConMercadoPago) {
+        instruccion = "Pedido anotado, pero no se pudo generar el link de pago. Pasale el número de pedido al cliente y decile que el negocio le va a mandar cómo pagar.";
+      }
       return JSON.stringify({
         ok: true,
         pedido: id,
         total: formatearPesos(v.total),
-        instruccion: "Pedido anotado. Pasale el número de pedido al cliente y aclarale que el negocio lo va a confirmar.",
+        ...(link ? { link_de_pago: link } : {}),
+        instruccion,
       });
     },
     {
@@ -214,6 +248,7 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes }) {
     buscar_productos: [buscarProductos],
     tomar_pedidos: [cotizarPedido, confirmarPedido],
     derivar_a_humano: [derivarAHumano],
+    cobrar_mercado_pago: [], // no es una herramienta aparte: cambia lo que hace confirmar_pedido
   };
   return empresa.herramientas.flatMap((capacidad) => porCapacidad[capacidad]);
 }

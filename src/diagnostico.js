@@ -11,6 +11,8 @@ import { cargarEmpresas } from "./config/empresas.js";
 import { crearHerramientas } from "./agente/herramientas.js";
 import { crearModeloGemini, nombreModeloPrincipal, nombresModelosRespaldo } from "./agente/modelo.js";
 import { crearFuente } from "./datos/crearFuente.js";
+import { crearTranscriptor } from "./agente/audio.js";
+import { verificarCuentaMercadoPago } from "./pagos/mercadoPago.js";
 import { crearPausas } from "./nucleo/pausas.js";
 import { crearPedidosPendientes } from "./nucleo/pedidosPendientes.js";
 import { mensajeDeError, pistaDeError } from "./nucleo/errores.js";
@@ -72,7 +74,20 @@ if (!simpleOk) {
   }
 }
 
-console.log("\n4) Datos de cada empresa (planilla o CSV)");
+console.log("\n4) Audios: Gemini escucha un audio de prueba");
+if (!simpleOk) {
+  aviso("Me salteo este paso: primero hay que resolver el paso 2.");
+} else {
+  try {
+    const transcribir = crearTranscriptor({ crearModelos: () => [crearModeloGemini(modelo)] });
+    const texto = await transcribir({ datos: audioDePrueba(), mimeType: "audio/wav" });
+    ok(`Gemini recibió el audio (un pitido de 1 segundo, sin voz). Entendió: ${texto ? `"${texto.slice(0, 60)}"` : "nada, como corresponde"}.`);
+  } catch (error) {
+    mostrarError(error);
+  }
+}
+
+console.log("\n5) Datos de cada empresa (planilla o CSV)");
 for (const empresa of cargarEmpresas().porId.values()) {
   try {
     const fuente = crearFuente(empresa);
@@ -87,4 +102,42 @@ for (const empresa of cargarEmpresas().porId.values()) {
   }
 }
 
-console.log("\nSi todo dio OK, probá el chat: npm run consola -- gomeria-demo\n");
+const conCobros = [...cargarEmpresas().porId.values()].filter((e) => e.herramientas.includes("cobrar_mercado_pago"));
+if (conCobros.length) {
+  console.log("\n6) Mercado Pago (empresas que cobran con link)");
+  for (const empresa of conCobros) {
+    try {
+      const cuenta = await verificarCuentaMercadoPago(empresa);
+      ok(`${empresa.id}: el token funciona. Cuenta de Mercado Pago: ${cuenta.usuario} (${cuenta.pais}).`);
+      if (/^TEST/i.test(cuenta.usuario)) aviso(`${empresa.id}: es una cuenta de PRUEBA. Los pagos no son reales (ideal para la demo).`);
+    } catch (error) {
+      mal(`${empresa.id}: ${mensajeDeError(error)}`);
+      if (/Falta/.test(String(error?.message))) console.log("       -> Pegá el Access Token en el .env (ver README, \"Cobrar con Mercado Pago\").");
+      else if (/401|403/.test(String(error?.message))) console.log("       -> El token no es válido: copialo de nuevo completo, sin espacios ni comillas.");
+    }
+  }
+}
+
+console.log("\nSi todo dio OK, probá el chat: npm run consola -- gomeria-demo (o la demo con micrófono: npm run demo -- gomeria-demo)\n");
+
+// Un audio WAV armado en el momento: 1 segundo de un pitido suave. Sirve para
+// comprobar que Gemini acepta audios con tu clave, sin necesitar un archivo.
+function audioDePrueba() {
+  const frecuencia = 16000;
+  const bytes = frecuencia * 2;
+  const wav = Buffer.alloc(44 + bytes);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + bytes, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16); // tamaño del bloque de formato
+  wav.writeUInt16LE(1, 20); // PCM
+  wav.writeUInt16LE(1, 22); // mono
+  wav.writeUInt32LE(frecuencia, 24);
+  wav.writeUInt32LE(frecuencia * 2, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(bytes, 40);
+  for (let i = 0; i < frecuencia; i++) wav.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / frecuencia) * 3000), 44 + i * 2);
+  return wav;
+}

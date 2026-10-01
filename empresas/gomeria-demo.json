@@ -27,7 +27,10 @@
     "tipo": "google-sheets",
     "spreadsheetId": "17IGMDLHtTOr-kQ_DdP-OPR_hZAKSvr9ZQ0dhn4FUqgw"
   },
-  "herramientas": ["buscar_productos", "tomar_pedidos", "derivar_a_humano"],
+  "herramientas": ["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago"],
+  "mercadoPago": {
+    "tokenEnv": "MERCADOPAGO_ACCESS_TOKEN"
+  },
   "derivacion": {
     "pausaMinutos": 120
   }

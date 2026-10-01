@@ -20,7 +20,9 @@ function empresaDePrueba(id) {
   const carpeta = fs.mkdtempSync(path.join(os.tmpdir(), `bot-${id}-`));
   fs.copyFileSync(path.join(RAIZ, "datos/gomeria-demo/productos.csv"), path.join(carpeta, "productos.csv"));
   const base = JSON.parse(fs.readFileSync(path.join(RAIZ, "empresas/gomeria-demo.json"), "utf8"));
-  return { empresa: validarEmpresa({ ...base, id, datos: { tipo: "local", carpeta } }, id), carpeta };
+  // Herramientas fijas: estas pruebas no usan Mercado Pago (eso está en pagos.test.js).
+  const herramientas = ["buscar_productos", "tomar_pedidos", "derivar_a_humano"];
+  return { empresa: validarEmpresa({ ...base, id, herramientas, datos: { tipo: "local", carpeta } }, id), carpeta };
 }
 
 // Guion de la IA simulada: en cada paso, qué herramienta "decide" usar.

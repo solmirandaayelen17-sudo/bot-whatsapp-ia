@@ -7,7 +7,8 @@
 // Qué columnas tiene cada pestaña donde el bot ESCRIBE. Fijas a propósito:
 // si el orden cambiara en cada empresa, los pedidos quedarían desordenados.
 export const ENCABEZADOS = {
-  Pedidos: ["id", "fecha", "telefono", "cliente", "detalle", "total", "modalidad", "notas", "estado"],
+  // "pago" (al final, para no mover las columnas que ya existen): el link de Mercado Pago.
+  Pedidos: ["id", "fecha", "telefono", "cliente", "detalle", "total", "modalidad", "notas", "estado", "pago"],
   Derivaciones: ["fecha", "telefono", "cliente", "motivo", "estado"],
 };
 

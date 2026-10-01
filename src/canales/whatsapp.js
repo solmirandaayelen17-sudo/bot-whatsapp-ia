@@ -9,9 +9,24 @@
 
 import crypto from "node:crypto";
 import express from "express";
+import { mensajeDeError, pistaDeError } from "../nucleo/errores.js";
 
 const VERSION_API = process.env.WHATSAPP_API_VERSION || "v25.0";
 const LIMITE_TEXTO = 4096; // WhatsApp no acepta mensajes de texto más largos
+export const LIMITE_AUDIO_BYTES = 14 * 1024 * 1024; // Gemini acepta hasta 20 MB por pedido (el audio va en base64)
+
+// Lo que el bot contesta cuando no puede usar el mensaje.
+export const RESPUESTAS = {
+  soloTexto: "Por ahora solo puedo leer mensajes de texto. ¿Me lo escribís?",
+  sinFotos: "Por ahora puedo leer mensajes y escuchar audios, pero no ver fotos, videos ni stickers. ¿Me lo escribís?",
+  audioLargo: "Uy, el audio es muy largo para mí. ¿Me lo resumís en uno más corto o por escrito?",
+  audioError: "Perdón, no pude escuchar tu audio. ¿Me lo escribís?",
+  audioInaudible: "No llegué a entender el audio. ¿Me lo repetís o me lo escribís?",
+};
+
+// POR QUÉ marcar los audios: así la IA sabe que el texto viene de una
+// transcripción automática y, si algo no tiene sentido, pregunta en vez de adivinar.
+export const PREFIJO_AUDIO = "(Audio del cliente, pasado a texto)";
 
 // POR QUÉ verificar la firma: cualquiera que conozca la dirección de tu servidor
 // podría mandarle mensajes falsos. Meta firma cada aviso con el "App Secret" de
@@ -47,6 +62,7 @@ export function extraerMensajes(aviso) {
           id: m.id,
           tipo: m.type,
           texto,
+          audio: m.type === "audio" && m.audio?.id ? { id: m.audio.id, mimeType: m.audio.mime_type } : null,
         });
       }
     }
@@ -83,7 +99,31 @@ export async function enviarTextoWhatsApp({ empresa, para, texto }) {
   }
 }
 
-export function crearRouterWhatsApp({ empresasPorNumero, procesar, enviarTexto = enviarTextoWhatsApp, verifyToken, appSecret }) {
+// Los audios no vienen en el aviso: Meta manda un id. Con ese id se pide la
+// dirección del archivo y después se descarga (las dos cosas con el token).
+export async function descargarMediaWhatsApp({ empresa, mediaId }) {
+  const token = process.env[empresa.whatsapp.tokenEnv];
+  if (!token) throw new Error(`Falta ${empresa.whatsapp.tokenEnv} en el .env (token de WhatsApp de ${empresa.id}).`);
+  const auth = { Authorization: `Bearer ${token}` };
+  const info = await fetch(`https://graph.facebook.com/${VERSION_API}/${mediaId}`, { headers: auth });
+  if (!info.ok) throw new Error(`WhatsApp respondió ${info.status} al pedir el audio: ${await info.text()}`);
+  const { url, mime_type, file_size } = await info.json();
+  if (file_size > LIMITE_AUDIO_BYTES) return { datos: null, mimeType: mime_type, tamano: file_size };
+  const archivo = await fetch(url, { headers: auth });
+  if (!archivo.ok) throw new Error(`WhatsApp respondió ${archivo.status} al descargar el audio.`);
+  const datos = Buffer.from(await archivo.arrayBuffer());
+  return { datos, mimeType: mime_type, tamano: datos.length };
+}
+
+export function crearRouterWhatsApp({
+  empresasPorNumero,
+  procesar,
+  enviarTexto = enviarTextoWhatsApp,
+  descargarMedia = descargarMediaWhatsApp,
+  transcribir = null, // si no se pasa, los audios reciben el aviso de "solo texto"
+  verifyToken,
+  appSecret,
+}) {
   const router = express.Router();
 
   // POR QUÉ recordar los ids: si tardamos en contestarle a Meta, reenvía el mismo
@@ -139,13 +179,43 @@ export function crearRouterWhatsApp({ empresasPorNumero, procesar, enviarTexto =
       console.warn(`[whatsapp] Llegó un mensaje al número ${m.phoneNumberId}, pero ninguna empresa lo tiene configurado.`);
       return;
     }
-    if (!m.texto) {
-      // Audios, fotos, stickers: por ahora avisamos. Los audios son la próxima etapa (Whisper).
-      await enviarTexto({ empresa, para: m.de, texto: "Por ahora solo puedo leer mensajes de texto. ¿Me lo escribís?" });
-      return;
+    const responder = (texto) => enviarTexto({ empresa, para: m.de, texto });
+
+    let texto = m.texto;
+    let transcripcion = null;
+    if (!texto && m.audio && transcribir) {
+      transcripcion = await escuchar(empresa, m);
+      if (transcripcion.respuesta) return responder(transcripcion.respuesta);
+      texto = `${PREFIJO_AUDIO}\n${transcripcion.texto}`;
     }
-    const respuesta = await procesar({ empresa, telefono: m.de, nombre: m.nombre, texto: m.texto });
-    if (respuesta) await enviarTexto({ empresa, para: m.de, texto: respuesta });
+    if (!texto) {
+      // Fotos, stickers, videos (o audios, si no está activada la transcripción).
+      return responder(transcribir ? RESPUESTAS.sinFotos : RESPUESTAS.soloTexto);
+    }
+    const respuesta = await procesar({
+      empresa,
+      telefono: m.de,
+      nombre: m.nombre,
+      texto,
+      transcripcion: transcripcion?.texto ?? null,
+    });
+    if (respuesta) await responder(respuesta);
+  }
+
+  // Descarga y transcribe un audio. Devuelve { texto } o, si no se pudo,
+  // { respuesta } con lo que hay que contestarle al cliente.
+  async function escuchar(empresa, m) {
+    try {
+      const audio = await descargarMedia({ empresa, mediaId: m.audio.id });
+      if (!audio.datos || audio.datos.length > LIMITE_AUDIO_BYTES) return { respuesta: RESPUESTAS.audioLargo };
+      const texto = await transcribir({ datos: audio.datos, mimeType: audio.mimeType || m.audio.mimeType });
+      return texto ? { texto } : { respuesta: RESPUESTAS.audioInaudible };
+    } catch (error) {
+      console.error(`[whatsapp] No pude transcribir el audio de ${m.de}: ${mensajeDeError(error)}`);
+      const pista = pistaDeError(error);
+      if (pista) console.error(`  -> ${pista}`);
+      return { respuesta: RESPUESTAS.audioError };
+    }
   }
 
   return router;

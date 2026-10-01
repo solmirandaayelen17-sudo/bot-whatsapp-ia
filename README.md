@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-30%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-48%20OK-brightgreen)
 
 ## Demo
 
@@ -24,12 +24,14 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 ## Lo más importante
 
 - **Agente de IA con herramientas.** No es un menú de "marcá 1, 2 o 3": entiende lenguaje natural y *hace cosas*, como buscar productos, cotizar, anotar pedidos o derivar a una persona.
+- **Entiende audios.** Las notas de voz se pasan a texto con Gemini (la misma clave, sin otro servicio) y el bot responde como si le hubieran escrito.
+- **Cobra con Mercado Pago.** Al confirmar el pedido, el cliente recibe un link de pago armado con los precios de la planilla. La IA no puede cambiar el monto.
 - **La IA decide, el código valida.** El código controla que el producto exista y que haya stock, y calcula el total. La IA no puede inventar precios, vender lo que no hay ni anotar un pedido sin que el cliente confirme.
 - **Multi-empresa.** Sumar un negocio es agregar un archivo JSON y una planilla, sin tocar el código.
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **30 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **48 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -38,6 +40,8 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 | Lenguaje | JavaScript con Node.js |
 | Agente de IA | LangChain v1 (`createAgent`, sobre LangGraph) |
 | Modelo | Google Gemini, con modelo de respaldo |
+| Audios | Gemini escucha la nota de voz y la pasa a texto |
+| Cobros | Mercado Pago Checkout Pro (API de preferencias) |
 | Datos del negocio | Google Sheets API (o archivos CSV para probar) |
 | WhatsApp | WhatsApp Cloud API oficial de Meta, con webhook en Express |
 | Validación de datos | Zod |
@@ -47,6 +51,9 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 - **Funciona de punta a punta** en el chat de prueba, leyendo y escribiendo en Google Sheets.
 - **El webhook de WhatsApp está probado** con un simulador que manda los mensajes con el formato y la firma de Meta (`npm run simulador`).
+- **Cobra con link de Mercado Pago** al confirmar el pedido (probado en modo prueba, sin plata real).
+- **Entiende notas de voz:** descarga el audio de WhatsApp, lo transcribe con Gemini y responde. En la demo se prueba con el micrófono.
+- **Demo para clientes:** un chat con forma de celular en el navegador, conectado al bot real a través del mismo webhook (`npm run demo`).
 - **Pendiente:** mandar y recibir mensajes reales por WhatsApp. Meta pide verificar el negocio antes de habilitar el envío, y eso se hace con el primer cliente.
 - Lo que sigue está más abajo, en *Qué NO hace todavía*.
 
@@ -59,7 +66,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (30 tests using a fake LLM), plus a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint. The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (48 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -71,7 +78,7 @@ flowchart LR
     C[Cliente en WhatsApp] --> M[Meta<br/>Cloud API]
     M -->|webhook| W[canales/whatsapp.js<br/>verifica firma y<br/>detecta la empresa]
     T[canales/consola.js<br/>chat de prueba] --> P
-    S[simulador.js<br/>hace de Meta] -->|aviso firmado| W
+    S[simulador.js y demo.js<br/>hacen de Meta] -->|aviso firmado| W
     W --> P[nucleo/procesador.js<br/>cola, pausas y memoria]
     P --> A[agente<br/>LangGraph + Gemini]
     A <--> H[herramientas<br/>buscar, pedir, derivar]
@@ -121,6 +128,10 @@ Lo mismo con la confirmación: un pedido se toma en dos pasos, `cotizar_pedido` 
 
 **12. Pruebas con IA simulada.** Las pruebas usan una IA "de mentira" que sigue un guion. Así se verifican las herramientas, la memoria, las pausas y la separación entre empresas sin gastar cuota y con resultados siempre iguales.
 
+**13. Los audios se pasan a texto con la misma IA.** Gemini escucha audios, así que no hace falta otro servicio (como Whisper) ni otra clave. El audio se transcribe y entra al bot como un mensaje más, con una marca para que la IA sepa que viene de una nota de voz: si algo no tiene sentido, pregunta en vez de adivinar. Si el audio no se entiende, falla o es muy largo, el cliente recibe un mensaje amable.
+
+**14. El link de pago lo arma el código, no la IA.** Los productos y precios del link salen de la cotización validada contra la planilla. Si en la respuesta de la IA el link no aparece completo, el código lo agrega al final, así el cliente siempre lo recibe. Si Mercado Pago falla, el pedido se anota igual y el bot avisa que el negocio le va a pasar cómo pagar. Cada negocio cobra en su propia cuenta.
+
 ---
 
 ## Estructura
@@ -139,15 +150,19 @@ bot-whatsapp-ia/
 │   │   ├── prompt.js          ← las instrucciones y reglas de la IA
 │   │   ├── herramientas.js    ← lo que el bot puede HACER
 │   │   ├── modelo.js          ← Gemini (cambiar de IA = cambiar este archivo)
+│   │   ├── audio.js           ← pasa las notas de voz a texto con Gemini
 │   │   └── crearAgente.js     ← junta todo con LangGraph
 │   ├── nucleo/                ← procesador, colas y pausas
+│   ├── pagos/mercadoPago.js   ← arma el link de pago de Mercado Pago
 │   ├── canales/
 │   │   ├── consola.js         ← chat de prueba en la terminal
 │   │   ├── whatsapp.js        ← webhook y envío por la API oficial
 │   │   ├── avisoMeta.js       ← arma y firma mensajes iguales a los de Meta
-│   │   └── simuladorWhatsApp.js ← hace de Meta para probar el webhook
+│   │   ├── simuladorWhatsApp.js ← hace de Meta para probar el webhook
+│   │   └── demoWeb.js / .html ← chat con forma de celular para mostrar
 │   ├── servidor.js            ← servidor para WhatsApp
 │   ├── simulador.js           ← chat de prueba que pasa por el webhook
+│   ├── demo.js                ← demo en el navegador para mostrarle a un cliente
 │   └── diagnostico.js         ← prueba Gemini y las planillas y dice qué falla
 └── test/                      ← pruebas automáticas (npm test)
 ```
@@ -197,7 +212,7 @@ Necesitás **Node.js 20 o más nuevo** (con `node -v` ves la versión) y **Git**
 3. Guardalo en `credenciales/cuenta-servicio.json` dentro del proyecto. Esa carpeta no se sube a GitHub.
 4. Creá una planilla con tres pestañas y estos encabezados en la fila 1:
    - **Productos**: `codigo, nombre, categoria, precio, stock, descripcion` (podés importar `datos/gomeria-demo/productos.csv`)
-   - **Pedidos**: `id, fecha, telefono, cliente, detalle, total, modalidad, notas, estado`
+   - **Pedidos**: `id, fecha, telefono, cliente, detalle, total, modalidad, notas, estado, pago`
    - **Derivaciones**: `fecha, telefono, cliente, motivo, estado`
 5. **Compartí la planilla** con el mail de la cuenta de servicio (termina en `iam.gserviceaccount.com`) como **Editor**.
 6. Copiá el ID de la planilla, que es lo que está entre `/d/` y `/edit` en la dirección. En `empresas/gomeria-demo.json` cambiá la parte de datos por esto:
@@ -220,12 +235,20 @@ Escribí como si fueras un cliente. Además tenés estos comandos:
 
 | Comando | Qué muestra |
 |---|---|
-| `/audio` | El cliente manda una nota de voz (por ahora el bot pide que lo escriba) |
+| `/audio <archivo>` | El cliente manda una nota de voz (un .ogg, .mp3, .m4a o .wav de tu compu; podés arrastrarlo a la terminal) |
 | `/repetido` | Meta reenvía el mismo aviso y el bot no contesta dos veces |
 | `/trucho` | Alguien que no es Meta manda un mensaje con firma falsa y el bot lo rechaza |
 | `/nuevo` | Escribe otro cliente, desde otro número |
 | `/reanudar` | Saca la pausa si el bot derivó la charla a una persona |
 | `/salir` | Cierra el simulador |
+
+### Para mostrárselo a un cliente: demo en el navegador
+
+```bash
+npm run demo -- gomeria-demo
+```
+
+Se abre <http://localhost:3001> con un chat con forma de celular. Cada mensaje pasa por el simulador y entra al webhook del bot, así que contesta lo mismo que contestaría por WhatsApp, con la planilla real. Con el botón del **micrófono** mandás una nota de voz: el bot la escucha, muestra lo que entendió y responde. Abajo del celular están **Nuevo cliente** (empieza otra charla) y **Reactivar el bot** (si derivó a una persona). Sirve para mostrarlo en persona o grabar un video. La página solo se puede abrir desde tu compu.
 
 ### Paso 3: conectarlo a WhatsApp con el número de prueba de Meta (30 minutos, gratis)
 
@@ -255,6 +278,23 @@ Escribí como si fueras un cliente. Además tenés estos comandos:
 
 > El token temporal vence a las 24 horas. Para algo estable, se crea un **usuario del sistema** con token permanente en el administrador comercial de Meta. Eso se configura al pasar a un cliente real.
 
+### Paso 4: cobrar con Mercado Pago (modo prueba, sin plata real)
+
+Al confirmar un pedido, el bot le manda al cliente un link para pagar. Para probarlo sin mover plata se usan las **credenciales de prueba** de Mercado Pago:
+
+1. Entrá a [Tus integraciones](https://www.mercadopago.com.ar/developers/panel/app) con tu cuenta de Mercado Pago y tocá **Crear aplicación** → **Crear en el panel de integración**.
+2. Elegí **Checkout Pro**, tipo de API **API de Preferences**, ponele un nombre y creala.
+3. En **Credenciales** → pestaña **Prueba**, tocá **Activar credenciales** y después **Ver datos de la credencial**.
+4. Copiá solo el **Access Token** y pegalo en el `.env`, en `MERCADOPAGO_ACCESS_TOKEN=`. Nunca lo compartas ni lo subas a GitHub. (La Public Key no se usa. El usuario, la contraseña y el código que aparecen son para entrar con esa cuenta de prueba.)
+5. En el JSON de la empresa, agregá `"cobrar_mercado_pago"` a `herramientas` (en `gomeria-demo` ya está).
+6. En la planilla, en la pestaña **Pedidos**, escribí `pago` en la celda **J1**: ahí se guarda el link de cada pedido.
+7. Corré `npm run diagnostico`: el paso 6 tiene que decir que el token funciona y que es una cuenta de **prueba**.
+8. Hacé un pedido en la demo o en la consola y abrí el link en una ventana de incógnito.
+9. Tocá **Ingresar con mi cuenta** y entrá con la cuenta de prueba **Comprador** (usuario `TESTUSER…` y contraseña, en **Cuentas de prueba** del panel). No te podés pagar a vos misma: tiene que ser la compradora.
+10. Pagá con una de sus tarjetas de prueba (código de seguridad `123`). Si sale rechazado, cargá una de [Tarjetas de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro/integration-test/test-purchases) a mano con `APRO` como titular y DNI `12345678`.
+
+> Con un cliente real se usa el Access Token de producción de **su** cuenta de Mercado Pago, y la plata le llega a él.
+
 ---
 
 ## Cómo adaptarlo a una empresa nueva
@@ -268,7 +308,10 @@ Escribí como si fueras un cliente. Además tenés estos comandos:
    | Paquete | `herramientas` |
    |---|---|
    | Atención 24/7 | `["buscar_productos", "derivar_a_humano"]` |
-   | Vende y agenda / Todo conectado | `["buscar_productos", "tomar_pedidos", "derivar_a_humano"]` + las que se sumen (turnos, cobros) |
+   | Vende y agenda | `["buscar_productos", "tomar_pedidos", "derivar_a_humano"]` + turnos, cuando se sumen |
+   | Todo conectado | `["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago"]` |
+
+   Si cobra con Mercado Pago, poné en `mercadoPago.tokenEnv` el nombre de la variable del `.env` con su token (por ejemplo `"MERCADOPAGO_TOKEN_TALLER_JUAN"`).
 
 6. Probalo con `npm run consola -- <id-del-cliente>` y con `npm run simulador -- <id-del-cliente>` antes de conectarlo a su WhatsApp.
 
@@ -282,10 +325,9 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 |---|---|
 | **Memoria en base de datos** (SQLite o Postgres) | Hoy la memoria y las pausas viven en la RAM: si reiniciás, el bot se olvida de las charlas. |
 | **Recortar el historial largo** | Las conversaciones muy largas gastan más cuota de IA. |
-| **Audios** (Whisper) | Acá casi todos mandan audios. Hoy el bot pide que le escriban. |
 | **Turnos** (Google Calendar) | Es el paquete "Vende y agenda". |
 | **Reactivar el bot cuando el dueño responde** | Con la coexistencia, Meta avisa cuando el dueño escribe desde su celular. Se puede usar para pausar o reanudar solo. |
-| **Cobros** (Mercado Pago) | Es el paquete "Todo conectado". |
+| **Avisar cuando se pagó** (notificaciones de Mercado Pago) | Hoy el link se manda y queda en la planilla, pero el pago se controla en la cuenta de Mercado Pago. Con las notificaciones, el pedido pasaría solo a "pagado". |
 | **Servidor en la nube** | Hoy corre en una compu: si se apaga, el bot se apaga. |
 | **Alta de clientes con Embedded Signup** | Registrándose como Tech Provider, cada negocio conecta su número con un botón. |
 
@@ -307,7 +349,8 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 |---|---|
 | `npm install` | Instala las dependencias |
 | `npm test` | Corre las pruebas automáticas |
-| `npm run diagnostico` | Prueba Gemini y las planillas paso a paso y dice qué falla |
+| `npm run diagnostico` | Prueba Gemini, los audios y las planillas paso a paso y dice qué falla |
 | `npm run consola -- <id>` | Chat de prueba en la terminal (`/nuevo`, `/reanudar`, `/salir`) |
-| `npm run simulador -- <id>` | Chat de prueba que pasa por el webhook, como si fuera WhatsApp (`/audio`, `/repetido`, `/trucho`, `/nuevo`, `/reanudar`, `/salir`) |
+| `npm run simulador -- <id>` | Chat de prueba que pasa por el webhook, como si fuera WhatsApp (`/audio <archivo>`, `/repetido`, `/trucho`, `/nuevo`, `/reanudar`, `/salir`) |
+| `npm run demo -- <id>` | Demo en el navegador: chat con forma de celular y micrófono, conectado al bot |
 | `npm run servidor` | Levanta el servidor para WhatsApp |

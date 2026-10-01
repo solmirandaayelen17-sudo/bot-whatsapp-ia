@@ -11,6 +11,7 @@ import { crearProcesador } from "./nucleo/procesador.js";
 import { crearModeloGemini, crearModelosRespaldoGemini, verificarClaveGemini } from "./agente/modelo.js";
 import { crearFuente } from "./datos/crearFuente.js";
 import { crearRouterWhatsApp } from "./canales/whatsapp.js";
+import { crearTranscriptor } from "./agente/audio.js";
 
 verificarClaveGemini();
 const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
@@ -33,7 +34,15 @@ const { procesar } = crearProcesador({
 
 const app = express();
 app.get("/", (_req, res) => res.send("Bot funcionando"));
-app.use(crearRouterWhatsApp({ empresasPorNumero: porNumero, procesar, verifyToken, appSecret }));
+app.use(
+  crearRouterWhatsApp({
+    empresasPorNumero: porNumero,
+    procesar,
+    transcribir: crearTranscriptor(), // los audios se pasan a texto con Gemini
+    verifyToken,
+    appSecret,
+  }),
+);
 
 const puerto = Number(process.env.PORT) || 3000;
 app.listen(puerto, () => {

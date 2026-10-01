@@ -8,6 +8,7 @@
     "consola": "node src/canales/consola.js",
     "servidor": "node src/servidor.js",
     "simulador": "node src/simulador.js",
+    "demo": "node src/demo.js",
     "diagnostico": "node src/diagnostico.js",
     "test": "node --test"
   },
