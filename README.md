@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-53%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-55%20OK-brightgreen)
 
 ## Demo
 
@@ -31,7 +31,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **53 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **55 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -67,7 +67,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (53 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (55 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -267,7 +267,7 @@ Publicada, la demo cambia sola a **modo público**: cada visitante tiene su prop
    | `GOOGLE_API_KEY` | tu clave de Gemini |
    | `GEMINI_MODEL` y `GEMINI_MODEL_RESPALDO` | los mismos de tu `.env` |
    | `GOOGLE_CREDENTIALS_JSON` | la llave de la cuenta de servicio: corré `npm run copiar-llave` y pegala con Ctrl + V |
-   | `MERCADOPAGO_ACCESS_TOKEN` | el de prueba (opcional: sin él, el bot dice que el negocio manda cómo pagar) |
+   | `MERCADOPAGO_ACCESS_TOKEN` | **el de la cuenta de prueba** (opcional: sin él, el bot dice que el negocio manda cómo pagar). Con el de una cuenta real, la demo publicada no arma links, así nadie paga de verdad; en los registros dice cuál es |
    | `SIREN_CONTACTO_WHATSAPP` | tu WhatsApp, solo números (opcional: activa "Agendar demostración") |
 
    No cargues `GOOGLE_APPLICATION_CREDENTIALS` (en el servidor no hay archivos) ni `PORT` (Railway lo pone solo).

@@ -67,5 +67,40 @@ export async function verificarCuentaMercadoPago(empresa) {
   const respuesta = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${tokenDe(empresa)}` } });
   if (!respuesta.ok) throw new Error(`Mercado Pago respondió ${respuesta.status}: ${(await respuesta.text()).slice(0, 200)}`);
   const datos = await respuesta.json();
-  return { usuario: datos.nickname ?? String(datos.id ?? "?"), pais: datos.site_id ?? "?" };
+  const usuario = datos.nickname ?? String(datos.id ?? "?");
+  // Las cuentas de prueba de Mercado Pago se llaman TESTUSER… y traen la etiqueta "test_user".
+  const prueba = /^TEST/i.test(usuario) || (Array.isArray(datos.tags) && datos.tags.includes("test_user"));
+  return { usuario, pais: datos.site_id ?? "?", prueba };
+}
+
+// Para la DEMO PÚBLICA: solo arma links si el token es de una cuenta de PRUEBA.
+//
+// POR QUÉ: cualquiera puede tocar "Pagar" en la demo. Con una cuenta de prueba,
+// Mercado Pago no deja pagar con plata ni tarjetas reales (el pago se rechaza).
+// Si por error se carga el token de una cuenta real, la demo no arma ningún
+// link, así nadie paga de verdad un pedido de mentira.
+export function crearCobrosSoloDePrueba({ verificar = verificarCuentaMercadoPago, crear = crearLinkMercadoPago } = {}) {
+  const revisadas = new Map(); // empresa.id -> promesa de { usuario, prueba }
+
+  function revisar(empresa) {
+    if (!revisadas.has(empresa.id)) {
+      const consulta = verificar(empresa);
+      consulta.catch(() => revisadas.delete(empresa.id)); // si falló la consulta, se vuelve a intentar
+      revisadas.set(empresa.id, consulta);
+    }
+    return revisadas.get(empresa.id);
+  }
+
+  return {
+    revisar,
+    async crearLink({ empresa, pedido }) {
+      const cuenta = await revisar(empresa);
+      if (!cuenta.prueba) {
+        throw new Error(
+          `la demo pública no arma links con la cuenta REAL de Mercado Pago "${cuenta.usuario}". Poné el token de la cuenta de prueba.`,
+        );
+      }
+      return crear({ empresa, pedido });
+    },
+  };
 }

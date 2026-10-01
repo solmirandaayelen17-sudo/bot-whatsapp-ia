@@ -218,15 +218,50 @@
     .hero .contenedor { grid-template-columns: minmax(0, 1fr); gap: 48px; }
     .presentacion { padding-right: 0; }
   }
-  /* Un celular de verdad: solo el chat, a pantalla completa. */
+  /* Un celular de verdad: la marca y la presentación más chicas arriba, y el
+     chat abajo, del alto de la pantalla para que se vea entero al llegar. */
   @media (max-width: 560px) {
-    .ambiente, .cabecera-sitio, .presentacion, .banda-onda, .pie, .halo { display: none; }
-    .hero { padding-block: 0; }
-    .contenedor { padding-inline: 0; }
-    .columna-celular { padding-block: 0; }
-    .celular { width: 100%; height: 100vh; border-radius: 0; padding: 0; box-shadow: none; }
-    .pantalla { border-radius: 0; border: none; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    .contenedor { padding-inline: 16px; }
+    .luz-1 { width: 340px; height: 340px; right: -120px; top: -60px; filter: blur(100px); }
+    .luz-2 { width: 300px; height: 300px; left: -140px; filter: blur(110px); }
+    .luz-3 { display: none; }
+
+    .cabecera-sitio { padding-block: 14px 0; }
+    .cabecera-sitio .fila { padding-bottom: 14px; gap: 12px; }
+    .marca { gap: 10px; }
+    .logo { width: 36px; height: 36px; border-radius: 12px; }
+    .marca-nombre { font-size: 22px; }
+    .marca-nombre span { font-size: 16px; }
+    .marca-sub { font-size: 8px; letter-spacing: .2em; }
+    .cta-borde { padding: 9px 14px; font-size: 12px; white-space: nowrap; }
+
+    .hero { padding-block: 22px 12px; }
+    .hero .contenedor { gap: 28px; }
+    .presentacion { gap: 18px; }
+    .volanta { display: none; } /* el nombre ya está en el encabezado */
+    .presentacion h1 { font-size: 42px; line-height: 1.05; }
+    .bajada { font-size: 15.5px; line-height: 1.6; }
+    .ventajas { gap: 10px; font-size: 14px; line-height: 1.45; }
+    .ventajas li { align-items: flex-start; gap: 12px; }
+    .ventajas li::before { margin-top: 10px; width: 16px; }
+    .acciones { gap: 10px; }
+    .boton-principal, .boton-secundario { flex: 1 1 100%; justify-content: center; padding: 13px 20px; }
+    .controles { justify-content: center; gap: 14px; font-size: 11px; }
+
+    .columna-celular { padding-block: 0 8px; }
+    .halo { width: 240px; height: 420px; }
+    .celular { width: 100%; max-width: 420px; height: 600px; height: min(640px, calc(100svh - 24px)); border-radius: 34px; padding: 6px; }
+    .pantalla { border-radius: 28px; }
     .isla, .barra-estado, .barra-home { display: none; }
+    .cabecera { padding: 14px 16px 10px; }
+    .campo textarea { font-size: 16px; } /* con menos de 16px el iPhone agranda la página al escribir */
+
+    .banda-onda { padding-block: 12px; }
+    .visualizador { gap: 3px; height: 40px; }
+    .visualizador i { width: 3px; }
+    .leyenda-onda { font-size: 9.5px; letter-spacing: .1em; }
+    .pie { padding-block: 18px; font-size: 11px; text-align: center; }
   }
 </style>
 </head>
@@ -408,6 +443,7 @@
   // ---------- Sesión: cada visitante tiene su propia charla ----------
   let sesion = null;
   let enlaceContacto = "";
+  let demoPublica = false;
   async function nuevaSesion() {
     const r = await fetch("/api/sesion", { method: "POST" }).then((x) => x.json());
     sesion = r.sesion;
@@ -434,6 +470,7 @@
     }
     // Publicada en internet, se aclara que los pedidos son de prueba.
     if (info.publica) {
+      demoPublica = true;
       document.querySelector(".chip.sistema").textContent =
         "Demo de Siren IA. Escribí o mandá un audio como si fueras un cliente. Los pedidos y pagos son de prueba: no se anotan ni se cobran.";
     }
@@ -500,7 +537,8 @@
       const titulo = document.createElement("b");
       titulo.textContent = "Pagar con Mercado Pago";
       const dominio = document.createElement("small");
-      dominio.textContent = new URL(link).hostname.replace(/^www\./, "");
+      // En la demo publicada se aclara también en la tarjeta: el pago es de prueba.
+      dominio.textContent = demoPublica ? "Pago de prueba · no se cobra" : new URL(link).hostname.replace(/^www\./, "");
       textos.append(titulo, dominio);
       const flecha = document.createElement("span");
       flecha.className = "tp-flecha";
@@ -776,14 +814,16 @@
     await nuevaSesion();
     for (const el of [...chat.querySelectorAll(".burbuja, .chip.aviso")]) el.remove();
     ultimoAutor = null;
-    campo.focus();
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) campo.focus();
   });
   document.getElementById("reanudar").addEventListener("click", async () => {
     await pedirAlBot("/api/reanudar");
     agregarAviso("El bot volvió a atender esta charla.");
   });
 
-  campo.focus();
+  // En la compu el cursor ya queda en el chat. En el celu no: abriría el
+  // teclado y saltaría directo al chat sin dejar ver la presentación.
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) campo.focus();
 </script>
 </body>
 </html>

@@ -10,7 +10,7 @@ import { validarEmpresa, RAIZ } from "../src/config/empresas.js";
 import { crearProcesador } from "../src/nucleo/procesador.js";
 import { crearFuente } from "../src/datos/crearFuente.js";
 import { parsearCsv, filasAObjetos } from "../src/datos/csv.js";
-import { armarPreferencia, crearLinkMercadoPago, fechaConZonaArgentina } from "../src/pagos/mercadoPago.js";
+import { armarPreferencia, crearLinkMercadoPago, fechaConZonaArgentina, crearCobrosSoloDePrueba, verificarCuentaMercadoPago } from "../src/pagos/mercadoPago.js";
 
 const LINK = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=123-abc";
 const herramientasConCobro = ["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago"];
@@ -160,4 +160,58 @@ test("la configuración de cobros se valida y tiene valores por defecto", () => 
   const sinNada = validarEmpresa({ ...base, herramientas: undefined, mercadoPago: undefined }, "y.json");
   assert.deepEqual(sinNada.herramientas, ["buscar_productos", "tomar_pedidos", "derivar_a_humano"]);
   assert.equal(sinNada.mercadoPago.tokenEnv, "MERCADOPAGO_ACCESS_TOKEN");
+});
+
+test("la demo pública solo arma links con una cuenta de PRUEBA de Mercado Pago", async () => {
+  const empresa = { id: "demo" };
+  const pedido = { id: "P-1", lineas: [] };
+  let creados = 0;
+  const crear = async () => ({ link: "https://mp/link", id: String(++creados) });
+
+  const deprueba = crearCobrosSoloDePrueba({ verificar: async () => ({ usuario: "TESTUSER123", prueba: true }), crear });
+  assert.deepEqual(await deprueba.crearLink({ empresa, pedido }), { link: "https://mp/link", id: "1" });
+
+  let consultas = 0;
+  const real = crearCobrosSoloDePrueba({
+    verificar: async () => (consultas++, { usuario: "NEGOCIOREAL", prueba: false }),
+    crear,
+  });
+  await assert.rejects(real.crearLink({ empresa, pedido }), /cuenta REAL/);
+  await assert.rejects(real.crearLink({ empresa, pedido }), /cuenta REAL/);
+  assert.equal(creados, 1, "con la cuenta real no se armó ningún link");
+  assert.equal(consultas, 1, "la cuenta se revisa una sola vez");
+
+  // Si Mercado Pago no contesta, no arma el link y lo vuelve a revisar la próxima vez.
+  let intentos = 0;
+  const caida = crearCobrosSoloDePrueba({
+    verificar: async () => {
+      intentos++;
+      if (intentos === 1) throw new Error("sin conexión");
+      return { usuario: "TESTUSER9", prueba: true };
+    },
+    crear,
+  });
+  await assert.rejects(caida.crearLink({ empresa, pedido }), /sin conexión/);
+  assert.equal((await caida.crearLink({ empresa, pedido })).link, "https://mp/link");
+});
+
+test("verificarCuentaMercadoPago reconoce una cuenta de prueba", async () => {
+  const original = globalThis.fetch;
+  const anterior = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  process.env.MERCADOPAGO_ACCESS_TOKEN = "token-falso";
+  try {
+    const respuestas = [
+      { nickname: "TESTUSER7881", site_id: "MLA" },
+      { nickname: "MINEGOCIO", site_id: "MLA", tags: ["normal", "test_user"] },
+      { nickname: "MINEGOCIO", site_id: "MLA", tags: ["normal"] },
+    ];
+    globalThis.fetch = async () => ({ ok: true, json: async () => respuestas.shift() });
+    assert.equal((await verificarCuentaMercadoPago({ id: "x" })).prueba, true);
+    assert.equal((await verificarCuentaMercadoPago({ id: "x" })).prueba, true);
+    assert.equal((await verificarCuentaMercadoPago({ id: "x" })).prueba, false);
+  } finally {
+    globalThis.fetch = original;
+    if (anterior === undefined) delete process.env.MERCADOPAGO_ACCESS_TOKEN;
+    else process.env.MERCADOPAGO_ACCESS_TOKEN = anterior;
+  }
 });

@@ -19,6 +19,7 @@ import { soloLectura } from "./datos/soloLectura.js";
 import { crearSimulador } from "./canales/simuladorWhatsApp.js";
 import { crearAppDemo } from "./canales/demoWeb.js";
 import { crearTranscriptor } from "./agente/audio.js";
+import { crearCobrosSoloDePrueba } from "./pagos/mercadoPago.js";
 
 const publica = /^(1|true|si|sí)$/i.test(process.env.DEMO_PUBLICA?.trim() ?? "");
 const numeroDe = (nombre, porDefecto) => {
@@ -39,10 +40,16 @@ if (!empresa) {
 // Publicada: lee la planilla real, pero los pedidos de prueba no se escriben.
 const fuenteDeLaDemo = publica ? (e) => soloLectura(crearFuente(e)) : crearFuente;
 
+// Publicada, los links de pago solo salen de una cuenta de PRUEBA de Mercado
+// Pago: así nadie que toque "Pagar" en la demo paga con plata de verdad.
+const cobraConMercadoPago = empresa.herramientas.includes("cobrar_mercado_pago");
+const cobros = publica && cobraConMercadoPago ? crearCobrosSoloDePrueba() : undefined;
+
 const { procesar, pausas } = crearProcesador({
   crearModelo: () => crearModeloGemini(),
   crearRespaldos: () => crearModelosRespaldoGemini(),
   crearFuente: fuenteDeLaDemo,
+  cobros,
 });
 
 const sim = await crearSimulador({
@@ -84,6 +91,7 @@ const servidor = app.listen(puerto, host, (error) => {
   console.log(`\nDemo de ${empresa.nombre} lista ${publica ? `(pública) en el puerto ${puerto}` : `en ${url}`}`);
   console.log(`Datos: ${fuenteDeLaDemo(empresa).descripcion}`);
   if (publica) console.log(`Límites: ${JSON.stringify(limites)}`);
+  if (cobros) avisarCuentaMercadoPago();
   console.log("Cada mensaje pasa por el webhook del bot, igual que por WhatsApp.");
   if (!publica) {
     console.log("Para cerrarla: Ctrl + C\n");
@@ -99,6 +107,21 @@ servidor.on("error", (error) => {
   }
   process.exit(1);
 });
+
+// En los registros de Railway queda escrito si los pagos de la demo son de prueba.
+async function avisarCuentaMercadoPago() {
+  try {
+    const cuenta = await cobros.revisar(empresa);
+    if (cuenta.prueba) {
+      console.log(`Mercado Pago: cuenta de PRUEBA (${cuenta.usuario}). Los pagos de la demo no son reales.`);
+    } else {
+      console.log(`ATENCIÓN: el token de Mercado Pago es de la cuenta REAL "${cuenta.usuario}".`);
+      console.log("La demo no va a armar links de pago hasta que pongas el token de la cuenta de prueba.");
+    }
+  } catch (error) {
+    console.log(`Mercado Pago: no pude revisar la cuenta (${error.message}). La demo no arma links hasta poder revisarla.`);
+  }
+}
 
 // Ctrl + C en tu compu, o el hosting apagando la demo para actualizarla.
 async function cerrar() {
