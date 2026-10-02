@@ -690,7 +690,7 @@ Cada noche te mando el balance del día. Y si me mandás la foto de una factura,
     const iniciales = info.nombre.split(/\s+/).filter((p) => p.length > 2).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
     document.getElementById("avatar").textContent = iniciales || "IA";
     document.title = "Demo autolavado · Zaivum IA";
-    // "Agendar demostración" abre tu WhatsApp, si cargaste SIREN_CONTACTO_WHATSAPP en el .env.
+    // "Agendar demostración" abre tu WhatsApp, si cargaste ZAIVUM_CONTACTO_WHATSAPP en el .env.
     if (info.contacto) {
       const agendar = document.getElementById("agendar");
       agendar.href = `https://wa.me/${info.contacto}?text=${encodeURIComponent("Hola! Quiero agendar una demostración de Zaivum IA.")}`;

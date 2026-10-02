@@ -271,7 +271,7 @@ Publicada, la demo cambia sola a **modo público**: cada visitante tiene su prop
    | `GEMINI_MODEL` y `GEMINI_MODEL_RESPALDO` | los mismos de tu `.env` |
    | `GOOGLE_CREDENTIALS_JSON` | la llave de la cuenta de servicio: corré `npm run copiar-llave` y pegala con Ctrl + V |
    | `MERCADOPAGO_ACCESS_TOKEN` | **el de la cuenta de prueba** (opcional: sin él, el bot dice que el negocio manda cómo pagar). Con el de una cuenta real, la demo publicada no arma links, así nadie paga de verdad; en los registros dice cuál es |
-   | `SIREN_CONTACTO_WHATSAPP` | tu WhatsApp, solo números (opcional: activa "Agendar demostración") |
+   | `ZAIVUM_CONTACTO_WHATSAPP` | tu WhatsApp con 549 adelante, solo números, ej. `5492975551234` (opcional: activa "Agendar demostración"). El nombre viejo `SIREN_CONTACTO_WHATSAPP` también sirve |
 
    No cargues `GOOGLE_APPLICATION_CREDENTIALS` (en el servidor no hay archivos) ni `PORT` (Railway lo pone solo).
 4. En **Settings → Networking**, tocá **Generate Domain**. Te da un link tipo `https://algo.up.railway.app`: esa es tu demo pública.

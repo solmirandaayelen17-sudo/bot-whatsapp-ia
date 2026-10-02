@@ -89,7 +89,8 @@ const app = crearAppDemo({
   empresa,
   sim,
   reanudar: (telefono) => pausas.reanudar(`${empresa.id}:${telefono}`),
-  contacto: process.env.SIREN_CONTACTO_WHATSAPP, // para el botón "Agendar demostración"
+  // Para el botón "Agendar demostración". SIREN_CONTACTO_WHATSAPP es el nombre viejo (sigue andando).
+  contacto: process.env.ZAIVUM_CONTACTO_WHATSAPP || process.env.SIREN_CONTACTO_WHATSAPP,
   publica,
   limites,
   limiteAudioBytes: publica ? 3 * 1024 * 1024 : undefined, // en internet, notas de voz de hasta ~3 MB
