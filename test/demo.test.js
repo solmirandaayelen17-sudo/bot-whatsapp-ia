@@ -44,7 +44,8 @@ test("la página carga y el chat responde pasando por el webhook", async () => {
   try {
     const pagina = await fetch(d.base + "/");
     assert.equal(pagina.status, 200);
-    assert.match(await pagina.text(), /Siren IA/);
+    assert.match(await pagina.text(), /Zaivum IA/);
+    assert.equal((await fetch(d.base + "/zaivum-marca.png")).headers.get("content-type"), "image/png");
     assert.equal(await (await fetch(d.base + "/salud")).text(), "ok");
     const info = await (await fetch(d.base + "/api/info")).json();
     assert.equal(info.nombre, "Gomería Test");

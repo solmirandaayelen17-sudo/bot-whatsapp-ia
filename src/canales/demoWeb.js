@@ -16,7 +16,9 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { LIMITE_AUDIO_BYTES } from "./whatsapp.js";
 
-const PAGINA = path.join(path.dirname(fileURLToPath(import.meta.url)), "demoWeb.html");
+const CARPETA = path.dirname(fileURLToPath(import.meta.url));
+const PAGINA = path.join(CARPETA, "demoWeb.html");
+const LOGO = path.join(CARPETA, "zaivum-marca.png");
 const LARGO_MAXIMO = 1000;
 const SESION_VALIDA = /^[A-Za-z0-9_-]{16,64}$/;
 const VIDA_DE_SESION_MS = 3 * 60 * 60_000; // una charla sin uso se olvida a las 3 horas
@@ -134,6 +136,9 @@ export function crearAppDemo({
   }
 
   app.get("/", (_req, res) => res.type("html").send(fs.readFileSync(PAGINA, "utf8")));
+
+  // El logo de Zaivum IA.
+  app.get("/zaivum-marca.png", (_req, res) => res.sendFile(LOGO, { maxAge: "1d" }));
 
   // Para que el hosting sepa que la demo está viva.
   app.get("/salud", (_req, res) => res.type("text").send("ok"));
