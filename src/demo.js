@@ -20,6 +20,7 @@ import { crearSimulador } from "./canales/simuladorWhatsApp.js";
 import { crearAppDemo } from "./canales/demoWeb.js";
 import { crearTranscriptor } from "./agente/audio.js";
 import { crearCobrosSoloDePrueba } from "./pagos/mercadoPago.js";
+import { crearAgenda, crearAgendaEnMemoria } from "./agenda/crearAgenda.js";
 
 const publica = /^(1|true|si|sí)$/i.test(process.env.DEMO_PUBLICA?.trim() ?? "");
 const numeroDe = (nombre, porDefecto) => {
@@ -50,6 +51,8 @@ const { procesar, pausas } = crearProcesador({
   crearRespaldos: () => crearModelosRespaldoGemini(),
   crearFuente: fuenteDeLaDemo,
   cobros,
+  // Publicada, los turnos van a una agenda de prueba: nadie toca el calendario real del negocio.
+  crearAgenda: publica ? (e) => (e.agenda ? crearAgendaEnMemoria() : null) : crearAgenda,
 });
 
 const sim = await crearSimulador({
@@ -91,6 +94,7 @@ const servidor = app.listen(puerto, host, (error) => {
   console.log(`\nDemo de ${empresa.nombre} lista ${publica ? `(pública) en el puerto ${puerto}` : `en ${url}`}`);
   console.log(`Datos: ${fuenteDeLaDemo(empresa).descripcion}`);
   if (publica) console.log(`Límites: ${JSON.stringify(limites)}`);
+  if (empresa.agenda) console.log(`Turnos: ${publica ? "agenda de prueba (en memoria): no se toca ningún calendario real" : crearAgenda(empresa).descripcion}`);
   if (cobros) avisarCuentaMercadoPago();
   console.log("Cada mensaje pasa por el webhook del bot, igual que por WhatsApp.");
   if (!publica) {

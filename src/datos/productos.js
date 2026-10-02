@@ -37,6 +37,8 @@ export function normalizarProducto(fila) {
     precio: Number.isFinite(precio) ? precio : null,
     stock: Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : null,
     descripcion: fila.descripcion?.trim() ?? "",
+    // Columna opcional: cuántos minutos dura un servicio (para la agenda de turnos).
+    duracion: Number.isFinite(parsearNumero(fila.duracion)) && parsearNumero(fila.duracion) > 0 ? Math.round(parsearNumero(fila.duracion)) : null,
   };
 }
 

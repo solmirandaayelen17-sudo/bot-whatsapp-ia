@@ -1,0 +1,15 @@
+codigo,nombre,categoria,precio,stock,duracion,descripcion
+COR-DAMA,Corte de dama,cortes,$ 18.000,,45,Incluye lavado y secado simple. Dura unos 45 minutos.
+COR-CAB,Corte de caballero,cortes,$ 12.000,,30,Con máquina o tijera. Dura unos 30 minutos.
+COR-NINO,Corte de niño (hasta 12 años),cortes,$ 9.000,,30,Dura unos 30 minutos.
+BAR-PERF,Perfilado de barba,barbería,$ 7.000,,30,Con navaja y toalla caliente.
+BRUSH,Brushing,peinados,$ 12.000,,45,Lavado y brushing. Dura unos 40 minutos.
+PEIN-FIESTA,Peinado de fiesta,peinados,$ 35.000,,60,Recogido o semirecogido. Conviene reservar con anticipación.
+COL-RAIZ,Color de raíz,color,$ 28.000,,90,Retoque de raíz con tintura profesional. Dura unos 90 minutos.
+COL-GLOBAL,Color global,color,$ 42.000,,120,Color en todo el largo. Precio para pelo hasta los hombros; más largo se cotiza en el local.
+MECHAS,Mechas o balayage,color,$ 65.000,,180,Precio desde. Dura unas 3 horas. Requiere evaluación previa.
+ALISADO,Alisado con keratina,tratamientos,$ 55.000,,150,Precio para pelo hasta los hombros. Dura unas 2 horas y media.
+NUTRI,Tratamiento de nutrición,tratamientos,$ 15.000,,30,Hidratación profunda con ampolla. Se puede sumar a cualquier servicio.
+MANI,Manicura con esmaltado semipermanente,uñas,$ 16.000,,60,Dura unos 60 minutos.
+SHAMPOO,Shampoo profesional 300 ml,productos,$ 14.500,8,,Para pelo teñido. Producto para llevar.
+MASC,Máscara capilar 250 ml,productos,$ 16.800,5,,Nutrición intensa. Producto para llevar.

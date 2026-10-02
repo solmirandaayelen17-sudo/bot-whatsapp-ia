@@ -17,8 +17,7 @@ const SEGUNDOS_CACHE = 60;
 // - En tu compu: como archivo, con su ruta en GOOGLE_APPLICATION_CREDENTIALS.
 // - En un servidor (Railway): pegada entera en la variable GOOGLE_CREDENTIALS_JSON,
 //   porque ahí no hay archivos privados.
-export function opcionesDeAutenticacion(entorno = process.env) {
-  const scopes = ["https://www.googleapis.com/auth/spreadsheets"];
+export function opcionesDeAutenticacion(entorno = process.env, scopes = ["https://www.googleapis.com/auth/spreadsheets"]) {
   const json = entorno.GOOGLE_CREDENTIALS_JSON?.trim();
   if (!json) return { scopes };
   let credentials;

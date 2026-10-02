@@ -1,0 +1,76 @@
+{
+  "id": "peluqueria-demo",
+  "nombre": "Peluquería Bella Demo",
+  "rubro": "peluquería y estética: cortes, color, peinados, tratamientos y uñas (negocio de ejemplo para demos)",
+  "tono": "cálido, cercano y claro, en español rioplatense (voseo), sin exagerar con la informalidad",
+  "negocio": {
+    "direccion": "Av. Ejemplo 456 (dirección de ejemplo)",
+    "horarios": "Martes a viernes de 9:00 a 13:00 y de 14:00 a 20:00. Sábados de 9:00 a 14:00. Domingos y lunes cerrado.",
+    "formasDePago": [
+      "efectivo",
+      "transferencia",
+      "tarjeta de débito y crédito",
+      "Mercado Pago"
+    ],
+    "envios": "Los servicios se hacen en el salón. Los productos para llevar se retiran en el local, no hacemos envíos.",
+    "preguntasFrecuentes": [
+      {
+        "pregunta": "¿Cómo saco turno?",
+        "respuesta": "Por este chat: decinos qué servicio querés y qué día, y te ofrecemos los horarios libres. El turno queda reservado al instante, y si querés lo podés dejar pago con Mercado Pago."
+      },
+      {
+        "pregunta": "¿Puedo cancelar o cambiar el turno?",
+        "respuesta": "Sí, avisanos con al menos 24 horas de anticipación por este chat y una persona del salón lo cambia."
+      },
+      {
+        "pregunta": "¿Los precios de color y alisado son fijos?",
+        "respuesta": "Son para pelo hasta los hombros. Si tenés el pelo más largo o mucho volumen, el precio final se confirma en el salón."
+      }
+    ]
+  },
+  "datos": {
+    "tipo": "local",
+    "carpeta": "datos/peluqueria-demo"
+  },
+  "herramientas": [
+    "buscar_productos",
+    "tomar_pedidos",
+    "derivar_a_humano",
+    "cobrar_mercado_pago",
+    "agendar_turnos"
+  ],
+  "mercadoPago": {
+    "tokenEnv": "MERCADOPAGO_ACCESS_TOKEN"
+  },
+  "derivacion": {
+    "pausaMinutos": 120
+  },
+  "agenda": {
+    "tipo": "memoria",
+    "horario": {
+      "martes": [
+        "09:00-13:00",
+        "14:00-20:00"
+      ],
+      "miercoles": [
+        "09:00-13:00",
+        "14:00-20:00"
+      ],
+      "jueves": [
+        "09:00-13:00",
+        "14:00-20:00"
+      ],
+      "viernes": [
+        "09:00-13:00",
+        "14:00-20:00"
+      ],
+      "sabado": [
+        "09:00-14:00"
+      ]
+    },
+    "duracionMinutos": 30,
+    "intervaloMinutos": 30,
+    "anticipacionMinutos": 60,
+    "diasAdelante": 30
+  }
+}

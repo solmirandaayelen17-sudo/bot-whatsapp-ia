@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-55%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-61%20OK-brightgreen)
 
 ## Demo
 
@@ -25,13 +25,14 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 - **Agente de IA con herramientas.** No es un menú de "marcá 1, 2 o 3": entiende lenguaje natural y *hace cosas*, como buscar productos, cotizar, anotar pedidos o derivar a una persona.
 - **Entiende audios.** Las notas de voz se pasan a texto con Gemini (la misma clave, sin otro servicio) y el bot responde como si le hubieran escrito.
+- **Da turnos.** Mira los horarios libres en el Google Calendar del negocio, reserva el turno y puede cobrarlo con Mercado Pago. Los horarios los calcula el código, así la IA no puede ofrecer uno ocupado.
 - **Cobra con Mercado Pago.** Al confirmar el pedido, el cliente recibe un link de pago armado con los precios de la planilla. La IA no puede cambiar el monto.
 - **La IA decide, el código valida.** El código controla que el producto exista y que haya stock, y calcula el total. La IA no puede inventar precios, vender lo que no hay ni anotar un pedido sin que el cliente confirme.
 - **Multi-empresa.** Sumar un negocio es agregar un archivo JSON y una planilla, sin tocar el código.
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **55 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **61 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -52,6 +53,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **Funciona de punta a punta** en el chat de prueba, leyendo y escribiendo en Google Sheets.
 - **El webhook de WhatsApp está probado** con un simulador que manda los mensajes con el formato y la firma de Meta (`npm run simulador`).
 - **Cobra con link de Mercado Pago** al confirmar el pedido (probado en modo prueba, sin plata real).
+- **Da turnos con Google Calendar** (probado con pruebas automáticas y con una agenda de prueba en la demo; falta probarlo con el calendario de un cliente).
 - **Entiende notas de voz:** descarga el audio de WhatsApp, lo transcribe con Gemini y responde. En la demo se prueba con el micrófono.
 - **Demo para clientes:** un chat con forma de celular en el navegador, conectado al bot real a través del mismo webhook (`npm run demo`).
 - **Demo pública lista para internet:** cada visitante tiene su propia charla, hay límites de mensajes y los pedidos de prueba no tocan la planilla. Se publica en Railway (`npm start` con `DEMO_PUBLICA=1`).
@@ -67,7 +69,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (55 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (61 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -323,6 +325,33 @@ Al confirmar un pedido, el bot le manda al cliente un link para pagar. Para prob
 
 ---
 
+### Agenda de turnos (Google Calendar)
+
+Para negocios que trabajan con turnos (peluquerías, estética, consultorios). El bot mira los horarios libres, reserva el turno en el calendario del negocio y, si cobra con Mercado Pago, manda el link para dejarlo pago.
+
+1. En [Google Cloud](https://console.cloud.google.com/), en el mismo proyecto de la cuenta de servicio, activá la **Google Calendar API** (APIs y servicios → Biblioteca).
+2. El negocio abre su Google Calendar en la compu → en el calendario, **Configuración y uso compartido** → **Compartir con personas específicas** → agrega el mail de la cuenta de servicio con el permiso **Realizar cambios en los eventos**.
+3. En esa misma página, en **Integrar el calendario**, copiá el **ID del calendario** (para el calendario principal es el mail del negocio).
+4. En el JSON de la empresa, sumá `"agendar_turnos"` a `herramientas` y la sección `agenda`:
+
+   ```json
+   "agenda": {
+     "tipo": "google-calendar",
+     "calendarId": "el-id-del-calendario@group.calendar.google.com",
+     "horario": { "martes": ["09:00-13:00", "14:00-20:00"], "sabado": ["09:00-14:00"] },
+     "duracionMinutos": 30,
+     "intervaloMinutos": 30,
+     "anticipacionMinutos": 60,
+     "diasAdelante": 30
+   }
+   ```
+
+   Los días van sin tilde (`miercoles`, `sabado`). Los que no están, el negocio está cerrado.
+5. En la planilla, la pestaña Productos puede tener una columna **duracion** (minutos) para cada servicio. Si un servicio no la tiene, se usa `duracionMinutos`. Los servicios van con el **stock vacío**.
+6. Corré `npm run diagnostico`: el paso 7 dice si ve el calendario.
+
+Cómo funciona: cualquier evento del calendario cuenta como horario ocupado, así el dueño puede anotar a mano los turnos que da por teléfono y el bot no los pisa. Si dos clientes piden el mismo horario a la vez, solo uno se lo queda. En la demo pública los turnos van a una agenda de prueba en memoria (`"tipo": "memoria"`), así nadie toca un calendario real.
+
 ## Cómo adaptarlo a una empresa nueva
 
 1. Copiá `empresas/gomeria-demo.json` a `empresas/<id-del-cliente>.json`.
@@ -351,7 +380,7 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 |---|---|
 | **Memoria en base de datos** (SQLite o Postgres) | Hoy la memoria y las pausas viven en la RAM: si reiniciás, el bot se olvida de las charlas. |
 | **Recortar el historial largo** | Las conversaciones muy largas gastan más cuota de IA. |
-| **Turnos** (Google Calendar) | Es el paquete "Vende y agenda". |
+| **Cancelar o cambiar turnos desde el chat** | Hoy el bot da turnos, pero para cancelar o cambiar deriva a una persona. |
 | **Reactivar el bot cuando el dueño responde** | Con la coexistencia, Meta avisa cuando el dueño escribe desde su celular. Se puede usar para pausar o reanudar solo. |
 | **Avisar cuando se pagó** (notificaciones de Mercado Pago) | Hoy el link se manda y queda en la planilla, pero el pago se controla en la cuenta de Mercado Pago. Con las notificaciones, el pedido pasaría solo a "pagado". |
 | **El bot de WhatsApp en la nube** | La demo ya se publica en Railway. Falta sumar el servidor del bot (`npm run servidor`) como otro servicio, cuando Meta habilite el número de un cliente. |

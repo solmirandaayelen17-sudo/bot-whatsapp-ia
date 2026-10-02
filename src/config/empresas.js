@@ -15,7 +15,10 @@ export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 // "tomar_pedidos" activa dos herramientas: cotizar_pedido y confirmar_pedido.
 // "cobrar_mercado_pago" hace que, al confirmar un pedido, el cliente reciba el
 // link para pagar (necesita "tomar_pedidos" y el token de Mercado Pago en el .env).
-export const HERRAMIENTAS_DISPONIBLES = ["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago"];
+export const HERRAMIENTAS_DISPONIBLES = ["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago", "agendar_turnos"];
+
+export const DIAS_DE_LA_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+const FRANJA = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
 // Las que tiene una empresa si su JSON no dice nada (cobrar necesita configurarse).
 const HERRAMIENTAS_POR_DEFECTO = ["buscar_productos", "tomar_pedidos", "derivar_a_humano"];
 
@@ -51,6 +54,20 @@ const esquemaEmpresa = z.object({
     .refine((h) => !h?.includes("cobrar_mercado_pago") || h.includes("tomar_pedidos"), {
       message: 'para "cobrar_mercado_pago" también hace falta "tomar_pedidos"',
     }),
+  // La AGENDA de turnos (para "agendar_turnos"). horario: qué días y franjas se
+  // atiende, ej. { "martes": ["09:00-13:00", "14:00-20:00"] }. Los días van sin tilde.
+  agenda: z
+    .object({
+      tipo: z.enum(["google-calendar", "memoria"]),
+      calendarId: z.string().optional(),
+      horario: z.partialRecord(z.enum(DIAS_DE_LA_SEMANA), z.array(z.string().regex(FRANJA, 'cada franja va como "09:00-13:00"'))),
+      duracionMinutos: z.number().int().positive().optional(),
+      intervaloMinutos: z.number().int().positive().optional(),
+      anticipacionMinutos: z.number().int().nonnegative().optional(),
+      diasAdelante: z.number().int().positive().optional(),
+    })
+    .refine((a) => a.tipo !== "google-calendar" || a.calendarId, { message: "falta calendarId (el ID del Google Calendar del negocio)" })
+    .optional(),
   mercadoPago: z.object({ tokenEnv: z.string().optional() }).optional(),
   derivacion: z.object({ pausaMinutos: z.number().int().positive() }).optional(),
 });
@@ -73,11 +90,23 @@ function conValoresPorDefecto(e) {
     herramientas: e.herramientas ?? [...HERRAMIENTAS_POR_DEFECTO],
     mercadoPago: { tokenEnv: e.mercadoPago?.tokenEnv ?? "MERCADOPAGO_ACCESS_TOKEN" },
     derivacion: { pausaMinutos: e.derivacion?.pausaMinutos ?? 120 },
+    agenda: e.agenda && {
+      ...e.agenda,
+      duracionMinutos: e.agenda.duracionMinutos ?? 30,
+      intervaloMinutos: e.agenda.intervaloMinutos ?? 30,
+      anticipacionMinutos: e.agenda.anticipacionMinutos ?? 60,
+      diasAdelante: e.agenda.diasAdelante ?? 30,
+    },
   };
 }
 
 export function validarEmpresa(datos, origen = "empresa") {
-  const r = esquemaEmpresa.safeParse(datos);
+  const r = esquemaEmpresa
+    .refine((e) => !e.herramientas?.includes("agendar_turnos") || e.agenda, {
+      message: 'para "agendar_turnos" hace falta la sección "agenda" (días y horarios de atención)',
+      path: ["agenda"],
+    })
+    .safeParse(datos);
   if (!r.success) {
     const detalle = r.error.issues.map((i) => `  - ${i.path.join(".") || "(raíz)"}: ${i.message}`).join("\n");
     throw new Error(`La configuración de ${origen} tiene errores:\n${detalle}`);

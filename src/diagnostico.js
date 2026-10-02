@@ -12,6 +12,7 @@ import { crearHerramientas } from "./agente/herramientas.js";
 import { crearModeloGemini, nombreModeloPrincipal, nombresModelosRespaldo } from "./agente/modelo.js";
 import { crearFuente } from "./datos/crearFuente.js";
 import { crearTranscriptor } from "./agente/audio.js";
+import { crearAgenda } from "./agenda/crearAgenda.js";
 import { verificarCuentaMercadoPago } from "./pagos/mercadoPago.js";
 import { crearPausas } from "./nucleo/pausas.js";
 import { crearPedidosPendientes } from "./nucleo/pedidosPendientes.js";
@@ -114,6 +115,22 @@ if (conCobros.length) {
       mal(`${empresa.id}: ${mensajeDeError(error)}`);
       if (/Falta/.test(String(error?.message))) console.log("       -> Pegá el Access Token en el .env (ver README, \"Cobrar con Mercado Pago\").");
       else if (/401|403/.test(String(error?.message))) console.log("       -> El token no es válido: copialo de nuevo completo, sin espacios ni comillas.");
+    }
+  }
+}
+
+const conCalendario = [...cargarEmpresas().porId.values()].filter((e) => e.herramientas.includes("agendar_turnos") && e.agenda?.tipo === "google-calendar");
+if (conCalendario.length) {
+  console.log("\n7) Google Calendar (empresas que dan turnos)");
+  for (const empresa of conCalendario) {
+    try {
+      const agenda = crearAgenda(empresa);
+      const ahora = new Date();
+      const ocupados = await agenda.ocupados(ahora, new Date(ahora.getTime() + 7 * 24 * 60 * 60_000));
+      ok(`${empresa.id}: veo el calendario. Tiene ${ocupados.length} horarios ocupados en los próximos 7 días.`);
+    } catch (error) {
+      mal(`${empresa.id}: ${mensajeDeError(error)}`);
+      console.log("       -> Compartí el calendario con el mail de la cuenta de servicio, con permiso \"Realizar cambios en los eventos\", y revisá el calendarId (ver README, \"Agenda de turnos\").");
     }
   }
 }

@@ -40,6 +40,8 @@ export function armarPrompt(empresa, ahora = new Date()) {
       "Los pedidos se toman en dos pasos. Primero usá cotizar_pedido y mostrale al cliente el detalle, el total y si retira o es con envío, y preguntale si confirma. Recién cuando el cliente responda que sí, usá confirmar_pedido (si no sabés su nombre, pedíselo). Nunca digas que un pedido está anotado si confirmar_pedido no te devolvió un número de pedido.",
     usa("cobrar_mercado_pago") &&
       "Los pagos se hacen con el link de Mercado Pago que te devuelve confirmar_pedido. Pasalo tal cual, completo. Nunca pidas datos de tarjeta por chat ni inventes otro link.",
+    usa("agendar_turnos") &&
+      "Para sacar un turno: averiguá qué servicio quiere y qué día. Usá ver_turnos_libres para ese día y ofrecé solo horarios de la lista. Cuando el cliente elija uno y sepas su nombre, usá reservar_turno. Nunca digas que un turno está reservado si reservar_turno no te lo confirmó. Si quiere cancelar o cambiar un turno ya sacado, usá derivar_a_humano.",
     usa("derivar_a_humano") &&
       "Usá derivar_a_humano si el cliente pide hablar con una persona, tiene un reclamo o está molesto, o pregunta algo que no podés resolver con los datos. Después avisale que una persona del equipo le va a responder por este mismo chat.",
     "Si te preguntan si sos una persona, decí la verdad: sos el asistente virtual del negocio.",
@@ -47,7 +49,7 @@ export function armarPrompt(empresa, ahora = new Date()) {
   ].filter(Boolean);
 
   return `Sos el asistente de WhatsApp de ${empresa.nombre} (${empresa.rubro}).
-Atendés a los clientes: respondés consultas, das precios y stock${usa("tomar_pedidos") ? " y tomás pedidos" : ""}.
+Atendés a los clientes: respondés consultas, das precios y stock${usa("tomar_pedidos") ? " y tomás pedidos" : ""}${usa("agendar_turnos") ? " y das turnos" : ""}.
 
 CÓMO HABLÁS
 - Tono: ${empresa.tono}.
@@ -64,5 +66,5 @@ ${reglas.map((r, i) => `${i + 1}. ${r}`).join("\n")}
 DATOS DEL NEGOCIO
 ${lineasNegocio.join("\n")}
 ${faq ? `\nPREGUNTAS FRECUENTES\n${faq}\n` : ""}
-Ahora es ${fechaHora} (hora de Argentina).`;
+Ahora es ${fechaHora} (hora de Argentina). La fecha de hoy es ${ahora.toLocaleDateString("sv-SE", { timeZone: "America/Argentina/Buenos_Aires" })}.`;
 }
