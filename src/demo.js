@@ -21,6 +21,10 @@ import { crearAppDemo } from "./canales/demoWeb.js";
 import { crearTranscriptor } from "./agente/audio.js";
 import { crearCobrosSoloDePrueba } from "./pagos/mercadoPago.js";
 import { crearAgenda, crearAgendaEnMemoria } from "./agenda/crearAgenda.js";
+import { crearLibroDeFichas } from "./fichas/ventas.js";
+import { datosDeEjemplo } from "./fichas/datosDeEjemplo.js";
+import { crearLectorDeFacturas } from "./fichas/factura.js";
+import { rutasDeAutolavado, cobrosDeDemo, PAGINA_AUTOLAVADO } from "./canales/demoAutolavado.js";
 
 const publica = /^(1|true|si|sí)$/i.test(process.env.DEMO_PUBLICA?.trim() ?? "");
 const numeroDe = (nombre, porDefecto) => {
@@ -44,7 +48,14 @@ const fuenteDeLaDemo = publica ? (e) => soloLectura(crearFuente(e)) : crearFuent
 // Publicada, los links de pago solo salen de una cuenta de PRUEBA de Mercado
 // Pago: así nadie que toque "Pagar" en la demo paga con plata de verdad.
 const cobraConMercadoPago = empresa.herramientas.includes("cobrar_mercado_pago");
-const cobros = publica && cobraConMercadoPago ? crearCobrosSoloDePrueba() : undefined;
+const vendeFichas = empresa.herramientas.includes("vender_fichas");
+// El autolavado usa un pago de prueba propio de la página (no hace falta Mercado Pago).
+const cobros = vendeFichas ? cobrosDeDemo : publica && cobraConMercadoPago ? crearCobrosSoloDePrueba() : undefined;
+
+// Autolavado: cada visitante tiene su propia caja, que arranca con un día de ventas de ejemplo.
+const libroFichas = vendeFichas
+  ? crearLibroDeFichas({ claveDe: (ctx) => ctx.telefono, semilla: (ahora) => datosDeEjemplo(empresa, ahora) })
+  : undefined;
 
 const { procesar, pausas } = crearProcesador({
   crearModelo: () => crearModeloGemini(),
@@ -53,6 +64,7 @@ const { procesar, pausas } = crearProcesador({
   cobros,
   // Publicada, los turnos van a una agenda de prueba: nadie toca el calendario real del negocio.
   crearAgenda: publica ? (e) => (e.agenda ? crearAgendaEnMemoria() : null) : crearAgenda,
+  libroFichas,
 });
 
 const sim = await crearSimulador({
@@ -81,6 +93,10 @@ const app = crearAppDemo({
   publica,
   limites,
   limiteAudioBytes: publica ? 3 * 1024 * 1024 : undefined, // en internet, notas de voz de hasta ~3 MB
+  // El autolavado tiene su propia página (3 celulares) y rutas para el pago, la caja, facturas y balance.
+  ...(vendeFichas
+    ? { pagina: PAGINA_AUTOLAVADO, rutas: rutasDeAutolavado({ empresa, libro: libroFichas, leerFactura: crearLectorDeFacturas() }) }
+    : {}),
 });
 
 // En tu compu: solo localhost (nadie de afuera entra). En internet: el puerto
@@ -95,7 +111,8 @@ const servidor = app.listen(puerto, host, (error) => {
   console.log(`Datos: ${fuenteDeLaDemo(empresa).descripcion}`);
   if (publica) console.log(`Límites: ${JSON.stringify(limites)}`);
   if (empresa.agenda) console.log(`Turnos: ${publica ? "agenda de prueba (en memoria): no se toca ningún calendario real" : crearAgenda(empresa).descripcion}`);
-  if (cobros) avisarCuentaMercadoPago();
+  if (cobros && !vendeFichas) avisarCuentaMercadoPago();
+  if (vendeFichas) console.log("Autolavado: pago de prueba propio de la demo (no usa Mercado Pago) y facturas leídas con Gemini.");
   console.log("Cada mensaje pasa por el webhook del bot, igual que por WhatsApp.");
   if (!publica) {
     console.log("Para cerrarla: Ctrl + C\n");

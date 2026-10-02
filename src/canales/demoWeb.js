@@ -38,6 +38,9 @@ const hoy = () => new Date().toLocaleDateString("es-AR", { timeZone: "America/Ar
 // - publica: true cuando está en internet (cambia el aviso del chat).
 // - limites: { porSesion, porIpPorMinuto, porIpPorDia, porDia } mensajes. Sin límites si no se pasan.
 // - limiteAudioBytes: tamaño máximo de una nota de voz.
+// - pagina: otra página para mostrar (por ejemplo la del autolavado, con 3 celulares).
+// - rutas(app, ayudas): para sumar rutas propias de esa página. ayudas trae
+//   sesionDe(req) y controlarLimites(req, sesion), así respetan las sesiones y los límites.
 export function crearAppDemo({
   empresa,
   sim,
@@ -46,6 +49,8 @@ export function crearAppDemo({
   publica = false,
   limites = {},
   limiteAudioBytes = LIMITE_AUDIO_BYTES,
+  pagina = PAGINA,
+  rutas = null,
 }) {
   const contactoLimpio = String(contacto ?? "").replace(/\D/g, "");
   const tope = { porSesion: Infinity, porIpPorMinuto: Infinity, porIpPorDia: Infinity, porDia: Infinity, ...limites };
@@ -135,7 +140,7 @@ export function crearAppDemo({
     }
   }
 
-  app.get("/", (_req, res) => res.type("html").send(fs.readFileSync(PAGINA, "utf8")));
+  app.get("/", (_req, res) => res.type("html").send(fs.readFileSync(pagina, "utf8")));
 
   // El logo de Zaivum IA.
   app.get("/zaivum-marca.png", (_req, res) => res.sendFile(LOGO, { maxAge: "1d" }));
@@ -177,6 +182,8 @@ export function crearAppDemo({
     reanudar(sesion.telefono);
     res.json({ ok: true });
   });
+
+  rutas?.(app, { sesionDe, controlarLimites });
 
   // Si el audio supera el límite, la página recibe un aviso claro en vez de un error.
   app.use((error, _req, res, siguiente) => {

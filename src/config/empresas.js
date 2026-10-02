@@ -15,7 +15,7 @@ export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 // "tomar_pedidos" activa dos herramientas: cotizar_pedido y confirmar_pedido.
 // "cobrar_mercado_pago" hace que, al confirmar un pedido, el cliente reciba el
 // link para pagar (necesita "tomar_pedidos" y el token de Mercado Pago en el .env).
-export const HERRAMIENTAS_DISPONIBLES = ["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago", "agendar_turnos"];
+export const HERRAMIENTAS_DISPONIBLES = ["buscar_productos", "tomar_pedidos", "derivar_a_humano", "cobrar_mercado_pago", "agendar_turnos", "vender_fichas"];
 
 export const DIAS_DE_LA_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
 const FRANJA = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
@@ -68,6 +68,20 @@ const esquemaEmpresa = z.object({
     })
     .refine((a) => a.tipo !== "google-calendar" || a.calendarId, { message: "falta calendarId (el ID del Google Calendar del negocio)" })
     .optional(),
+  // VENTA DE FICHAS (autolavados, para "vender_fichas"): cuántas bahías hay, los
+  // precios (sueltas y combos), a quién avisar y los gastos fijos para el balance.
+  fichas: z
+    .object({
+      bahias: z.number().int().min(1).max(60),
+      precios: z.array(z.object({ cantidad: z.number().int().positive(), precio: z.number().positive() })).min(1),
+      maximoPorCompra: z.number().int().positive().optional(),
+      encargado: z.string().optional(), // WhatsApp del encargado (solo números), para el aviso
+      dueno: z.string().optional(), // WhatsApp del dueño, para el balance de cada noche
+      gastosFijosMensuales: z.array(z.object({ concepto: z.string(), monto: z.number().nonnegative() })).optional(),
+      reserva: z.number().nonnegative().optional(), // la plata que tiene ahorrada el negocio (para la alerta)
+    })
+    .refine((f) => f.precios.some((p) => p.cantidad === 1), { message: "tiene que haber un precio para 1 ficha suelta" })
+    .optional(),
   mercadoPago: z.object({ tokenEnv: z.string().optional() }).optional(),
   derivacion: z.object({ pausaMinutos: z.number().int().positive() }).optional(),
 });
@@ -90,6 +104,7 @@ function conValoresPorDefecto(e) {
     herramientas: e.herramientas ?? [...HERRAMIENTAS_POR_DEFECTO],
     mercadoPago: { tokenEnv: e.mercadoPago?.tokenEnv ?? "MERCADOPAGO_ACCESS_TOKEN" },
     derivacion: { pausaMinutos: e.derivacion?.pausaMinutos ?? 120 },
+    fichas: e.fichas && { maximoPorCompra: 10, gastosFijosMensuales: [], reserva: 0, ...e.fichas },
     agenda: e.agenda && {
       ...e.agenda,
       duracionMinutos: e.agenda.duracionMinutos ?? 30,
@@ -102,6 +117,10 @@ function conValoresPorDefecto(e) {
 
 export function validarEmpresa(datos, origen = "empresa") {
   const r = esquemaEmpresa
+    .refine((e) => !e.herramientas?.includes("vender_fichas") || e.fichas, {
+      message: 'para "vender_fichas" hace falta la sección "fichas" (bahías y precios)',
+      path: ["fichas"],
+    })
     .refine((e) => !e.herramientas?.includes("agendar_turnos") || e.agenda, {
       message: 'para "agendar_turnos" hace falta la sección "agenda" (días y horarios de atención)',
       path: ["agenda"],

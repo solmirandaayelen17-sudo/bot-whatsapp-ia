@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo autolavado · Zaivum IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap">
+<style>
+  /* Estética de Zaivum IA: fondo claro, degradado violeta → azul y letra redondeada.
+     El celular imita a WhatsApp a propósito. */
+  :root {
+    --fondo: #080b12;
+    --noche: #0a101d;
+    --teal: #06d6a0;
+    --glow: #2dd4bf;
+    --champagne: #eddcc8;
+    --texto: #f1f5f9;
+    --texto-2: #cbd5e1;
+    --texto-3: #94a3b8;
+    --texto-4: #64748b;
+    --linea: rgba(255, 255, 255, .06);
+    --serif: "Cormorant Garamond", Georgia, serif;
+    --sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    /* WhatsApp */
+    --wa-verde: #008069;
+    --wa-mic: #00a884;
+    --wa-chat: #efeae2;
+    --wa-saliente: #d9fdd3;
+    --wa-barra: #f0f2f5;
+    --tinta: #111b21;
+    --tinta-suave: #667781;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    min-height: 100vh; background: var(--fondo); color: var(--texto); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; display: flex; flex-direction: column;
+  }
+  ::selection { background: var(--teal); color: #000; }
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+  [hidden] { display: none !important; }
+
+  /* Luces de fondo */
+  .ambiente { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .ambiente span { position: absolute; border-radius: 50%; }
+  .luz-1 { top: -80px; right: 22%; width: 600px; height: 600px; background: rgba(6, 214, 160, .10); filter: blur(140px); }
+  .luz-2 { bottom: 40px; left: 40px; width: 500px; height: 500px; background: rgba(19, 78, 74, .22); filter: blur(160px); }
+  .luz-3 { top: 50%; left: 33%; width: 300px; height: 300px; background: rgba(245, 158, 11, .05); filter: blur(120px); }
+
+  .contenedor { position: relative; z-index: 1; width: 100%; max-width: 1280px; margin: 0 auto; padding-inline: 32px; }
+
+  /* Encabezado */
+  .cabecera-sitio { padding-block: 28px 0; }
+  .cabecera-sitio .fila { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--linea); }
+  .marca { display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; }
+  .logo { width: 40px; height: 40px; border-radius: 16px; background: var(--noche); box-shadow: 0 0 0 1px rgba(6, 214, 160, .3), 0 10px 20px rgba(4, 47, 46, .4); display: grid; place-items: center; flex: none; }
+  .marca-nombre { font-family: var(--serif); font-weight: 700; font-size: 24px; color: #fff; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 6px; line-height: 1.1; }
+  .marca-nombre span { font-family: var(--sans); font-weight: 600; font-size: 19px; color: var(--teal); letter-spacing: .05em; }
+  .marca-sub { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .25em; color: var(--texto-3); font-weight: 500; margin-top: 2px; }
+  .cta-borde {
+    font: inherit; font-size: 12px; font-weight: 600; color: #fff; cursor: pointer; padding: 10px 20px; border-radius: 999px;
+    border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(var(--noche), var(--noche)) padding-box, linear-gradient(90deg, var(--teal), var(--glow), #34d399) border-box;
+    box-shadow: 0 10px 20px rgba(6, 214, 160, .1); transition: background .25s, color .25s;
+  }
+  .cta-borde:hover { background: linear-gradient(90deg, var(--teal), var(--glow), #34d399) padding-box, linear-gradient(90deg, var(--teal), var(--glow), #34d399) border-box; color: #000; }
+
+  /* Portada */
+  .hero { flex: 1; display: flex; align-items: center; padding-block: 40px; }
+  .hero .contenedor { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px; align-items: center; }
+  .presentacion { display: flex; flex-direction: column; gap: 28px; padding-right: 40px; min-width: 0; }
+  .volanta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .volanta-nombre { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 30px; color: var(--champagne); letter-spacing: .02em; }
+  .volanta-nombre span { font-family: var(--sans); font-style: normal; font-weight: 700; font-size: 18px; color: var(--teal); }
+  .volanta-sep { width: 1px; height: 14px; background: rgba(255, 255, 255, .2); }
+  .volanta-pildora { font-size: 11px; text-transform: uppercase; letter-spacing: .24em; font-weight: 600; color: var(--texto-3); background: rgba(255, 255, 255, .03); border: 1px solid rgba(255, 255, 255, .1); padding: 6px 12px; border-radius: 999px; }
+  .presentacion h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(48px, 5.3vw, 76px); line-height: 1.06; letter-spacing: -.015em; color: #fff; }
+  .presentacion h1 .wa { font-style: italic; font-weight: 400; color: var(--teal); text-shadow: 0 0 25px rgba(6, 214, 160, .35); }
+  .presentacion h1 .vos { font-style: italic; color: var(--champagne); }
+  .bajada { font-size: 18px; line-height: 1.65; color: rgba(203, 213, 225, .9); max-width: 36rem; }
+  .bajada u { color: #fff; font-weight: 500; text-decoration-color: rgba(6, 214, 160, .5); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  .divisor { width: 100%; max-width: 32rem; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .1), transparent); }
+  .ventajas { list-style: none; padding: 0; display: grid; gap: 16px; max-width: 36rem; font-size: 15px; font-weight: 300; color: var(--texto-2); }
+  .ventajas li { display: flex; align-items: center; gap: 16px; transition: transform .2s, color .2s; }
+  .ventajas li::before { content: ""; width: 20px; height: 1px; background: var(--texto-4); flex: none; transition: width .3s, background .3s; }
+  .ventajas li:hover { color: #fff; transform: translateX(4px); }
+  .ventajas li:hover::before { width: 28px; background: var(--teal); }
+  .ventajas strong { color: #fff; font-weight: 500; }
+  .acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-top: 4px; }
+  .boton-principal, .boton-secundario { font: inherit; font-size: 14px; font-weight: 500; border-radius: 999px; padding: 14px 28px; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; transition: background .3s, transform .3s, box-shadow .3s, color .3s; }
+  .boton-principal { background: var(--wa-mic); color: #fff; border: none; box-shadow: 0 10px 15px -3px rgba(0, 168, 132, .25); }
+  .boton-principal:hover { background: #00c298; transform: translateY(-2px); box-shadow: 0 10px 20px -3px rgba(0, 168, 132, .4); }
+  .boton-secundario { background: rgba(255, 255, 255, .05); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, .1); }
+  .boton-secundario:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+  .controles { display: flex; align-items: center; gap: 20px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 500; color: var(--texto-4); }
+  .controles button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .controles button:hover { color: var(--texto-2); }
+  .controles .punto { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+  .controles .punto.b { background: #2dd4bf; }
+  .controles .sep { color: rgba(255, 255, 255, .2); }
+
+  /* El celular */
+  .columna-celular { position: relative; display: flex; justify-content: center; align-items: center; padding-block: 24px; }
+  .halo { position: absolute; width: 360px; height: 580px; border-radius: 55px; background: linear-gradient(180deg, rgba(6, 214, 160, .2), rgba(19, 78, 74, .1), transparent); filter: blur(48px); pointer-events: none; }
+  .celular {
+    position: relative; width: 370px; height: clamp(560px, calc(100vh - 150px), 700px); background: #000; border-radius: 52px; padding: 10px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), 0 25px 60px -15px rgba(0, 0, 0, .8), 0 0 40px -10px rgba(6, 214, 160, .15);
+    font-family: var(--sans);
+  }
+  .pantalla { position: relative; height: 100%; border-radius: 44px; overflow: hidden; display: flex; flex-direction: column; background: var(--wa-chat); border: 1px solid #262626; }
+  .isla { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 112px; height: 20px; background: #000; border-radius: 999px; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+  .isla i { width: 9px; height: 9px; border-radius: 50%; background: #171717; }
+  .barra-estado { background: var(--wa-verde); color: #fff; padding: 10px 28px 4px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; }
+  .barra-estado .iconos { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .bateria { width: 20px; height: 10px; border: 1px solid rgba(255, 255, 255, .8); border-radius: 3px; padding: 1px; }
+  .bateria i { display: block; width: 100%; height: 100%; background: #fff; border-radius: 1px; }
+  .cabecera { background: var(--wa-verde); color: #fff; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(0, 0, 0, .12); z-index: 2; }
+  .cabecera .izq { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .cabecera svg { flex: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #d1fae5; color: var(--wa-verde); display: grid; place-items: center; font-weight: 700; font-size: 12px; letter-spacing: .05em; flex: none; }
+  .cabecera .nombre { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cabecera .estado { font-size: 11px; color: #d1fae5; font-weight: 300; }
+  .cabecera .der { display: flex; gap: 14px; opacity: .9; }
+
+  .chat {
+    flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; color: var(--tinta);
+    background-color: var(--wa-chat);
+    background-image: radial-gradient(#d6cec4 1px, transparent 1px), radial-gradient(#d6cec4 1px, transparent 1px);
+    background-size: 24px 24px; background-position: 0 0, 12px 12px;
+  }
+  .chip { align-self: center; background: rgba(255, 255, 255, .85); color: #54656f; font-size: 11px; font-weight: 500; padding: 3px 12px; border-radius: 6px; box-shadow: 0 1px 1px rgba(0, 0, 0, .06); text-align: center; }
+  .chip.sistema { background: #fff3c4; border: 1px solid rgba(253, 230, 138, .7); color: #78350f; font-size: 11.5px; line-height: 1.4; padding: 10px; border-radius: 8px; font-weight: 400; max-width: 100%; }
+  .chip.aviso { background: #e7ecff; color: #36407a; max-width: 90%; font-size: 11.5px; line-height: 1.4; padding: 6px 12px; }
+
+  .burbuja { max-width: 84%; padding: 7px 11px 6px; border-radius: 16px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); position: relative; animation: entrar .18s ease-out; }
+  .bot { align-self: flex-start; background: #fff; border: 1px solid #f5f5f5; border-top-left-radius: 2px; }
+  .cliente { align-self: flex-end; background: var(--wa-saliente); border-top-right-radius: 2px; }
+  .seguido.bot { border-top-left-radius: 16px; }
+  .seguido.cliente { border-top-right-radius: 16px; }
+  .hora { float: right; display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--tinta-suave); margin: 8px 0 -3px 10px; }
+  .tildes { width: 14px; height: 14px; color: #53bdeb; }
+  @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .burbuja a { color: #0066cc; text-decoration: underline; overflow-wrap: anywhere; font-size: 11.5px; }
+  .burbuja a.tarjeta-pago { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; border-radius: 12px; background: #f0f4f9; border: 1px solid rgba(219, 234, 254, .8); color: var(--tinta); text-decoration: none; white-space: normal; font-size: 13px; }
+  .tarjeta-pago:hover { background: #eaf2ff; }
+  .tp-icono { width: 40px; height: 40px; border-radius: 50%; background: #009ee3; color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 17px; flex: none; }
+  .tarjeta-pago b { display: block; font-size: 12px; font-weight: 600; }
+  .tarjeta-pago small { display: block; font-size: 11px; color: #737373; }
+  .tp-flecha { margin-left: auto; color: #a3a3a3; font-size: 20px; line-height: 1; }
+
+  .escribiendo { align-self: flex-start; background: #fff; border-radius: 16px; border-top-left-radius: 2px; padding: 12px 14px; display: none; gap: 5px; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); }
+  .escribiendo.visible { display: flex; }
+  .escribiendo span { width: 7px; height: 7px; border-radius: 50%; background: #9aa1b5; animation: rebote 1.2s infinite; }
+  .escribiendo span:nth-child(2) { animation-delay: .15s; }
+  .escribiendo span:nth-child(3) { animation-delay: .3s; }
+  @keyframes rebote { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+  /* Barra para escribir */
+  .entrada { background: var(--wa-barra); padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #e5e5e5; }
+  .emoji { color: #737373; display: grid; place-items: center; flex: none; }
+  .campo { flex: 1; display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid rgba(229, 229, 229, .8); border-radius: 999px; padding: 4px 12px 4px 14px; min-width: 0; }
+  .campo textarea { flex: 1; resize: none; border: none; outline: none; font: inherit; font-size: 13px; line-height: 1.4; padding: 6px 0; max-height: 96px; background: transparent; color: var(--tinta); min-width: 0; }
+  .campo svg { color: #a3a3a3; flex: none; }
+  .entrada > button#enviar { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--wa-mic); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); transition: transform .1s, opacity .2s, background .2s; }
+  .entrada > button#enviar:hover { background: #008f6f; }
+  .entrada > button#enviar:active { transform: scale(.94); }
+  .entrada > button#enviar:disabled { opacity: .45; cursor: default; }
+  .grabando { flex: 1; display: none; align-items: center; gap: 10px; background: #fff; border-radius: 999px; height: 38px; padding: 0 4px 0 14px; color: var(--tinta); font-size: 13px; border: 1px solid rgba(229, 229, 229, .8); }
+  .entrada.modo-grabando .campo, .entrada.modo-grabando .emoji { display: none; }
+  .entrada.modo-grabando .grabando { display: flex; }
+  .punto-rojo { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; animation: latir 1s infinite; flex: none; }
+  @keyframes latir { 50% { opacity: .25; } }
+  .grabando .tiempo { font-variant-numeric: tabular-nums; }
+  .grabando .leyenda { color: var(--tinta-suave); font-size: 12.5px; }
+  .cancelar { margin-left: auto; height: 30px; padding: 0 12px; border-radius: 15px; border: none; background: none; color: #c0392b; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .cancelar:hover { background: #fdecea; }
+  .barra-home { background: var(--wa-barra); padding-bottom: 8px; display: flex; justify-content: center; }
+  .barra-home i { width: 128px; height: 4px; border-radius: 999px; background: #a3a3a3; }
+
+  /* Nota de voz dentro del chat */
+  .nota { display: flex; align-items: center; gap: 10px; min-width: 210px; padding: 2px 0; }
+  .nota .play { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--wa-mic); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .nota .onda { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; }
+  .nota .onda i { display: block; flex: 1; max-width: 4px; min-height: 3px; border-radius: 2px; background: #8fbf9f; }
+  .nota .onda i.oido { background: var(--wa-mic); }
+  .nota .duracion { font-size: 11px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+  .transcripcion { display: block; font-size: 12px; line-height: 1.4; color: #4b5563; font-style: italic; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0, 0, 0, .07); }
+
+  /* Onda de voz */
+  .banda-onda { position: relative; z-index: 1; border-top: 1px solid var(--linea); padding-block: 16px; }
+  .banda-onda .contenedor { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .visualizador { display: flex; align-items: center; justify-content: center; gap: 5px; height: 48px; opacity: .6; transition: opacity .3s; }
+  .visualizador:hover { opacity: 1; }
+  .visualizador i { display: block; width: 4px; border-radius: 999px; }
+  .visualizador .t30 { background: rgba(6, 214, 160, .3); }
+  .visualizador .t40 { background: rgba(6, 214, 160, .4); }
+  .visualizador .t60 { background: rgba(6, 214, 160, .6); }
+  .visualizador .t80 { background: rgba(6, 214, 160, .8); }
+  .visualizador .t100 { background: var(--teal); }
+  .visualizador .glow { background: var(--glow); }
+  .visualizador .blanco { background: rgba(255, 255, 255, .45); }
+  .leyenda-onda { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--texto-4); display: flex; align-items: center; gap: 8px; text-align: center; }
+  .vivo { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex: none; }
+  .vivo::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--teal); animation: ping 1.4s cubic-bezier(0, 0, .2, 1) infinite; }
+  @keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+
+  /* Pie */
+  .pie { position: relative; z-index: 1; border-top: 1px solid var(--linea); background: rgba(0, 0, 0, .4); padding-block: 24px; font-size: 12px; color: var(--texto-4); }
+  .pie i { font-family: var(--serif); font-weight: 600; color: var(--texto-3); font-size: 14px; }
+
+
+  /* ===== Tema Zaivum IA (va al final para pisar el estilo anterior) ===== */
+  :root {
+    --fondo: #f7f8fc; --noche: #ffffff; --teal: #3b4bff; --glow: #7b2ff7; --champagne: #0a6cff;
+    --texto: #11131a; --texto-2: #3b4152; --texto-3: #5b6275; --texto-4: #6b7286;
+    --linea: rgba(17, 19, 26, .08);
+    --violeta: #7b2ff7; --azul: #0a6cff;
+    --degrade: linear-gradient(90deg, #7b2ff7, #4a3cf5 50%, #0a6cff);
+    --serif: "Lexend", "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  ::selection { background: #dcd2ff; color: var(--texto); }
+  :focus-visible { outline-color: var(--violeta); }
+  .luz-1 { background: rgba(123, 47, 247, .12); }
+  .luz-2 { background: rgba(10, 108, 255, .10); }
+  .luz-3 { background: rgba(123, 47, 247, .05); }
+  .logo { width: 48px; background: #fff; border-radius: 14px; box-shadow: 0 0 0 1px rgba(74, 60, 245, .15), 0 8px 20px rgba(74, 60, 245, .12); }
+  .logo img { width: 34px; height: auto; display: block; }
+  .marca-nombre { color: var(--texto); font-weight: 600; letter-spacing: -.02em; }
+  .marca-nombre span, .volanta-nombre span { font-family: var(--serif); background: var(--degrade); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cta-borde { color: var(--texto); background: linear-gradient(#fff, #fff) padding-box, var(--degrade) border-box; box-shadow: 0 8px 18px rgba(74, 60, 245, .12); }
+  .cta-borde:hover { background: var(--degrade) padding-box, var(--degrade) border-box; color: #fff; }
+  .volanta-nombre { font-style: normal; font-weight: 600; font-size: 26px; color: var(--texto); letter-spacing: -.02em; }
+  .volanta-sep { background: rgba(17, 19, 26, .15); }
+  .volanta-pildora { background: #fff; border-color: rgba(17, 19, 26, .1); }
+  .presentacion h1 { font-weight: 300; letter-spacing: -.035em; color: var(--texto); line-height: 1.08; }
+  .presentacion h1 .wa { font-style: normal; font-weight: 600; text-shadow: none; background: var(--degrade); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .presentacion h1 .vos { font-style: normal; font-weight: 500; color: var(--texto); }
+  .bajada { color: var(--texto-2); }
+  .bajada u { color: var(--texto); text-decoration-color: rgba(74, 60, 245, .45); }
+  .divisor { background: linear-gradient(90deg, rgba(74, 60, 245, .35), rgba(10, 108, 255, .15), transparent); }
+  .ventajas li:hover { color: var(--texto); }
+  .ventajas li:hover::before { background: var(--violeta); }
+  .ventajas strong { color: var(--texto); }
+  .boton-principal { background: var(--degrade); box-shadow: 0 12px 22px -8px rgba(74, 60, 245, .45); }
+  .boton-principal:hover { background: var(--degrade); filter: brightness(1.08); box-shadow: 0 14px 26px -8px rgba(74, 60, 245, .55); }
+  .boton-secundario { background: #fff; color: var(--texto); border-color: rgba(17, 19, 26, .12); }
+  .boton-secundario:hover { background: #f0efff; color: var(--texto); }
+  .controles .punto { background: var(--violeta); }
+  .controles .punto.b { background: var(--azul); }
+  .controles .sep { color: rgba(17, 19, 26, .2); }
+  .halo { background: linear-gradient(180deg, rgba(123, 47, 247, .22), rgba(10, 108, 255, .12), transparent); }
+  .celular { box-shadow: 0 0 0 1px rgba(17, 19, 26, .15), 0 30px 60px -20px rgba(30, 27, 75, .45), 0 0 50px -10px rgba(74, 60, 245, .25); }
+  .visualizador { opacity: .8; }
+  .visualizador .t30 { background: rgba(123, 47, 247, .3); }
+  .visualizador .t40 { background: rgba(123, 47, 247, .45); }
+  .visualizador .t60 { background: rgba(74, 60, 245, .65); }
+  .visualizador .t80 { background: rgba(10, 108, 255, .8); }
+  .visualizador .t100 { background: var(--azul); }
+  .visualizador .glow { background: var(--violeta); }
+  .visualizador .blanco { background: rgba(17, 19, 26, .18); }
+  .vivo, .vivo::after { background: var(--violeta); }
+  .pie { background: #fff; }
+  .pie i { font-style: normal; color: var(--texto); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+  /* Pantallas medianas: el texto arriba y el celular abajo. */
+  @media (max-width: 1023px) {
+    .hero .contenedor { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+    .presentacion { padding-right: 0; }
+  }
+  /* Un celular de verdad: la marca y la presentación más chicas arriba, y el
+     chat abajo, del alto de la pantalla para que se vea entero al llegar. */
+  @media (max-width: 560px) {
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    .contenedor { padding-inline: 16px; }
+    .luz-1 { width: 340px; height: 340px; right: -120px; top: -60px; filter: blur(100px); }
+    .luz-2 { width: 300px; height: 300px; left: -140px; filter: blur(110px); }
+    .luz-3 { display: none; }
+
+    .cabecera-sitio { padding-block: 14px 0; }
+    .cabecera-sitio .fila { padding-bottom: 14px; gap: 12px; }
+    .marca { gap: 10px; }
+    .logo { width: 36px; height: 36px; border-radius: 12px; }
+    .marca-nombre { font-size: 22px; }
+    .marca-nombre span { font-size: 16px; }
+    .marca-sub { font-size: 8px; letter-spacing: .2em; }
+    .cta-borde { padding: 9px 14px; font-size: 12px; white-space: nowrap; }
+
+    .hero { padding-block: 22px 12px; }
+    .hero .contenedor { gap: 28px; }
+    .presentacion { gap: 18px; }
+    .volanta { display: none; } /* el nombre ya está en el encabezado */
+    .presentacion h1 { font-size: 42px; line-height: 1.05; }
+    .bajada { font-size: 15.5px; line-height: 1.6; }
+    .ventajas { gap: 10px; font-size: 14px; line-height: 1.45; }
+    .ventajas li { align-items: flex-start; gap: 12px; }
+    .ventajas li::before { margin-top: 10px; width: 16px; }
+    .acciones { gap: 10px; }
+    .boton-principal, .boton-secundario { flex: 1 1 100%; justify-content: center; padding: 13px 20px; }
+    .controles { justify-content: center; gap: 14px; font-size: 11px; }
+
+    .columna-celular { padding-block: 0 8px; }
+    .halo { width: 240px; height: 420px; }
+    .celular { width: 100%; max-width: 420px; height: 600px; height: min(640px, calc(100svh - 24px)); border-radius: 34px; padding: 6px; }
+    .pantalla { border-radius: 28px; }
+    .isla, .barra-estado, .barra-home { display: none; }
+    .cabecera { padding: 14px 16px 10px; }
+    .campo textarea { font-size: 16px; } /* con menos de 16px el iPhone agranda la página al escribir */
+
+    .banda-onda { padding-block: 12px; }
+    .visualizador { gap: 3px; height: 40px; }
+    .visualizador i { width: 3px; }
+    .leyenda-onda { font-size: 9.5px; letter-spacing: .1em; }
+    .pie { padding-block: 18px; font-size: 11px; text-align: center; }
+  }
+
+  /* ===== Demo del autolavado: 3 celulares ===== */
+  .lav { position: relative; z-index: 1; flex: 1; padding-block: 36px 24px; }
+  .lav-intro { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: end; margin-bottom: 40px; }
+  .lav-intro .presentacion { padding-right: 0; gap: 22px; }
+  .lav-intro .presentacion h1 { font-size: clamp(40px, 4.6vw, 64px); }
+  .pasos { list-style: none; padding: 0; display: grid; gap: 14px; }
+  .pasos li { display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid rgba(17, 19, 26, .08); border-radius: 16px; padding: 14px 16px; }
+  .pasos b { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--degrade); font-family: var(--serif); font-size: 14px; }
+  .pasos strong { display: block; font-size: 15px; color: var(--texto); }
+  .pasos span { font-size: 13.5px; line-height: 1.5; color: var(--texto-2); }
+  .tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; }
+  .rol { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--texto-3); }
+  .rol b { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--texto); }
+  .tres .celular { width: 100%; max-width: 350px; height: 640px; }
+  .pestanas { display: none; }
+  .reloj { font-variant-numeric: tabular-nums; }
+  .oculto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  /* Pantalla de pago de prueba */
+  .pago { position: absolute; inset: 0; z-index: 8; background: rgba(17, 19, 26, .45); display: flex; align-items: flex-end; }
+  .pago-caja { width: 100%; background: #fff; border-radius: 24px 24px 0 0; padding: 18px 20px 26px; display: flex; flex-direction: column; gap: 6px; text-align: center; color: var(--tinta); animation: subir .25s ease-out; }
+  @keyframes subir { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .pago-top { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; color: var(--violeta); }
+  .pago-cerrar { width: 32px; height: 32px; border-radius: 50%; border: none; background: #f0f2f5; font-size: 20px; line-height: 1; cursor: pointer; color: #54656f; }
+  .pago-a { font-size: 12px; color: #667781; margin-top: 6px; }
+  .pago-item { font-size: 15px; font-weight: 600; }
+  .pago-monto { font-family: var(--serif); font-size: 38px; font-weight: 600; letter-spacing: -.02em; }
+  .pago-detalle { font-size: 12px; color: #667781; margin-bottom: 8px; }
+  .pago-boton { font: inherit; font-weight: 600; font-size: 15px; color: #fff; border: none; border-radius: 999px; padding: 14px; cursor: pointer; background: var(--degrade); box-shadow: 0 10px 20px -8px rgba(74, 60, 245, .5); }
+  .pago-boton:disabled { opacity: .7; cursor: default; }
+  .pago-ok { font-weight: 700; color: #15803d; font-size: 16px; padding: 10px; }
+  .pago-nota { font-size: 11px; color: #667781; margin-top: 6px; line-height: 1.4; }
+
+  /* Celular del encargado: pantalla bloqueada con notificaciones */
+  .pantalla.bloqueo { background: linear-gradient(170deg, #1d2140, #3a2a7a 55%, #123a8a); color: #fff; align-items: center; padding-top: 70px; }
+  .bl-hora { font-family: var(--serif); font-weight: 300; font-size: 76px; letter-spacing: -.04em; line-height: 1; }
+  .bl-dia { font-size: 14px; opacity: .85; margin-top: 6px; }
+  .bl-notis { width: 100%; flex: 1; overflow-y: auto; padding: 28px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .bl-vacio { margin: 30px 16px 0; text-align: center; font-size: 13px; line-height: 1.5; opacity: .75; }
+  .noti { background: rgba(255, 255, 255, .94); color: var(--tinta); border-radius: 20px; padding: 12px 14px; display: flex; gap: 12px; animation: caer .35s cubic-bezier(.2, .9, .3, 1.2); }
+  @keyframes caer { from { transform: translateY(-16px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+  .noti .wa { width: 38px; height: 38px; border-radius: 10px; background: #25d366; display: grid; place-items: center; flex: none; }
+  .noti .app { display: flex; justify-content: space-between; font-size: 11px; color: #6b7280; }
+  .noti b { display: block; font-size: 14.5px; margin-top: 2px; }
+  .noti p { font-size: 12.5px; line-height: 1.4; margin-top: 2px; color: #3b4152; }
+  .noti .ok { color: #15803d; font-weight: 700; }
+
+  /* Celular del dueño */
+  .avatar-z { background: var(--degrade); color: #fff; }
+  .atajos { background: var(--wa-barra); padding: 10px 10px 6px; display: flex; flex-direction: column; gap: 7px; border-top: 1px solid #e5e5e5; }
+  .atajo { font: inherit; font-size: 13px; font-weight: 600; color: #0b6b58; background: #fff; border: 1px solid #d7e7e1; border-radius: 999px; padding: 9px 12px; cursor: pointer; text-align: center; transition: background .2s; }
+  .atajo:hover { background: #effaf6; }
+  .atajo[aria-disabled="true"], .atajo:disabled { opacity: .55; cursor: default; }
+  .foto-factura { align-self: flex-end; background: var(--wa-saliente); padding: 5px; border-radius: 14px; border-top-right-radius: 2px; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); }
+  .foto-factura img { display: block; width: 150px; border-radius: 10px; }
+  #chat-dueno .burbuja { max-width: 92%; }
+
+  /* La caja */
+  .caja { width: 100%; max-width: 350px; background: #fff; border: 1px solid rgba(17, 19, 26, .08); border-radius: 18px; padding: 16px; box-shadow: 0 16px 34px -24px rgba(30, 27, 75, .35); }
+  .caja-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .caja h3 { font-family: var(--serif); font-size: 17px; font-weight: 600; }
+  .caja-cab p { font-size: 12px; color: var(--texto-3); }
+  .caja-total { text-align: right; }
+  .caja-total b { display: block; font-family: var(--serif); font-size: 20px; font-variant-numeric: tabular-nums; }
+  .caja-total span { font-size: 12px; color: var(--texto-3); }
+  .caja-tabla { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .caja-tabla th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--texto-3); font-weight: 600; padding: 6px 4px; border-bottom: 1px solid var(--linea); }
+  .caja-tabla td { padding: 7px 4px; border-bottom: 1px solid var(--linea); color: var(--texto-2); }
+  .caja-tabla tr.propia td { background: #eef0ff; color: var(--texto); font-weight: 600; }
+  .caja-tabla tr.propia td:first-child { border-radius: 8px 0 0 8px; }
+  .caja-tabla tr.propia td:last-child { border-radius: 0 8px 8px 0; }
+  .caja-tabla tr.recien td { animation: brillar 1.6s ease-out; }
+  @keyframes brillar { from { background: #d9dcff; } }
+  .caja-nota { font-size: 11.5px; color: var(--texto-3); margin-top: 8px; }
+
+  .aviso-flotante { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 12px; background: var(--texto); color: #fff; border-radius: 999px; padding: 10px 10px 10px 18px; font-size: 14px; box-shadow: 0 16px 30px -10px rgba(0, 0, 0, .45); max-width: calc(100% - 32px); }
+  .aviso-flotante button { font: inherit; font-weight: 600; font-size: 13px; border: none; border-radius: 999px; padding: 8px 14px; background: var(--degrade); color: #fff; cursor: pointer; }
+
+  @media (max-width: 1100px) {
+    .tres { gap: 16px; }
+    .tres .celular { height: 600px; }
+  }
+  /* Celu y tablet: un celular por vez, con pestañas */
+  @media (max-width: 900px) {
+    .lav { padding-block: 20px 16px; }
+    .lav-intro { grid-template-columns: minmax(0, 1fr); gap: 20px; margin-bottom: 20px; }
+    .pestanas { display: flex; gap: 6px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; padding: 8px 0; background: var(--fondo); margin-bottom: 8px; }
+    .pestana { position: relative; flex: 1; font: inherit; font-size: 14px; font-weight: 600; color: var(--texto-2); background: #fff; border: 1px solid rgba(17, 19, 26, .1); border-radius: 999px; padding: 10px 6px; cursor: pointer; }
+    .pestana.activa { color: #fff; background: var(--degrade); border-color: transparent; }
+    .nuevo-aviso { position: absolute; top: 6px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: #e5484d; box-shadow: 0 0 0 2px #fff; }
+    .tres { grid-template-columns: minmax(0, 1fr); }
+    .col:not(.activa) { display: none; }
+    .rol { display: none; }
+    .tres .celular { max-width: 420px; height: 600px; height: min(640px, calc(100svh - 90px)); }
+    .caja { max-width: 420px; }
+  }
+</style>
+</head>
+<body>
+  <div class="ambiente" aria-hidden="true"><span class="luz-1"></span><span class="luz-2"></span><span class="luz-3"></span></div>
+
+  <header class="cabecera-sitio">
+    <div class="contenedor">
+      <div class="fila">
+        <a class="marca" href="#" aria-label="Zaivum IA">
+          <span class="logo" aria-hidden="true"><img src="/zaivum-marca.png" alt="" width="30" height="15"></span>
+          <span>
+            <span class="marca-nombre">Zaivum <span>IA</span></span>
+            <span class="marca-sub">Agente IA para WhatsApp</span>
+          </span>
+        </a>
+        <button type="button" class="cta-borde" data-probar>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>
+          Probalo ahora
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="lav">
+    <div class="contenedor">
+      <section class="lav-intro">
+        <div class="presentacion">
+          <div class="volanta">
+            <span class="volanta-nombre">Zaivum <span>IA</span></span>
+            <span class="volanta-sep"></span>
+            <span class="volanta-pildora">Demo para autolavados</span>
+          </div>
+          <h1>Tu autolavado,<br>atendido y <span class="wa">administrado</span><br><span class="vos">por WhatsApp.</span></h1>
+          <p class="bajada">Probalo como cliente: pedí fichas desde el auto y pagá (es de prueba). Mirá qué <u>le llega al encargado</u> y qué recibe el dueño a la noche.</p>
+          <div class="acciones">
+            <button type="button" class="boton-principal" data-probar>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>
+              Probalo ahora
+            </button>
+            <a class="boton-secundario" id="agendar" href="#" target="_blank" rel="noopener noreferrer" hidden>
+              Agendar demostración
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5l7 7-7 7M21 12H3"/></svg>
+            </a>
+          </div>
+          <div class="controles">
+            <button type="button" id="nuevo"><span class="punto"></span>Empezar de nuevo</button>
+            <span class="sep" aria-hidden="true">•</span>
+            <button type="button" id="reanudar"><span class="punto b"></span>Reactivar el bot</button>
+          </div>
+        </div>
+        <ol class="pasos">
+          <li><b>1</b><div><strong>Pedí fichas</strong><span>Decile al bot en qué bahía estás y cuántas querés. Por escrito o con un audio.</span></div></li>
+          <li><b>2</b><div><strong>Pagá con el link</strong><span>Es un pago de prueba. Al aprobarse, se anota solo en la caja.</span></div></li>
+          <li><b>3</b><div><strong>Mirá los otros celulares</strong><span>Al encargado le llega a qué bahía ir. El dueño ve el balance y carga facturas con una foto.</span></div></li>
+        </ol>
+      </section>
+
+      <nav class="pestanas" aria-label="Elegí qué celular ver">
+        <button type="button" class="pestana activa" data-tab="cliente">Cliente</button>
+        <button type="button" class="pestana" data-tab="encargado">Encargado<i class="nuevo-aviso" hidden></i></button>
+        <button type="button" class="pestana" data-tab="dueno">Dueño<i class="nuevo-aviso" hidden></i></button>
+      </nav>
+
+      <section class="tres">
+        <div class="col activa" data-col="cliente">
+          <p class="rol"><b>El cliente</b><span>desde el auto</span></p>
+          <div class="celular">
+          <div class="pantalla">
+            <div class="isla" aria-hidden="true"><i></i><i></i></div>
+            <div class="barra-estado">
+              <span class="reloj" id="reloj">13:59</span>
+              <span class="iconos" aria-hidden="true">5G
+                <svg width="16" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="14" width="3" height="8" rx=".5"/><rect x="7" y="10" width="3" height="12" rx=".5"/><rect x="12" y="6" width="3" height="16" rx=".5"/><rect x="17" y="2" width="3" height="20" rx=".5"/></svg>
+                <span class="bateria"><i></i></span>
+              </span>
+            </div>
+            <div class="cabecera">
+              <div class="izq">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 19l-7-7 7-7"/></svg>
+                <div class="avatar" id="avatar">··</div>
+                <div style="min-width:0">
+                  <div class="nombre" id="nombre">Cargando…</div>
+                  <div class="estado" id="estado">en línea</div>
+                </div>
+              </div>
+              <div class="der" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+              </div>
+            </div>
+            <div class="chat" id="chat">
+              <div class="chip">Hoy</div>
+              <div class="chip sistema">Estás en el auto, en el autolavado. Pedile fichas al bot: escribiendo o con un audio.</div>
+              <div class="escribiendo" id="escribiendo"><span></span><span></span><span></span></div>
+            </div>
+            <form class="entrada" id="formulario" autocomplete="off">
+              <span class="emoji" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-3.5-9c.828 0 1.5-.672 1.5-1.5S9.328 8 8.5 8 7 8.672 7 9.5 7.672 11 8.5 11zm7 0c.828 0 1.5-.672 1.5-1.5S16.328 8 15.5 8 14 8.672 14 9.5s.672 1.5 1.5 1.5zm-3.5 6.5c2.33 0 4.31-1.55 4.88-3.75h-9.76c.57 2.2 2.55 3.75 4.88 3.75z"/></svg>
+              </span>
+              <div class="campo">
+                <textarea id="texto" rows="1" placeholder="Escribí un mensaje" maxlength="1000" aria-label="Mensaje"></textarea>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V6H9v9.5a3 3 0 0 0 6 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+              </div>
+              <div class="grabando" aria-live="polite">
+                <span class="punto-rojo"></span>
+                <span class="tiempo" id="tiempo">0:00</span>
+                <span class="leyenda">Grabando…</span>
+                <button type="button" class="cancelar" id="cancelar">Cancelar</button>
+              </div>
+              <button id="enviar" type="submit" aria-label="Grabar audio">
+                <svg id="icono-mic" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                <svg id="icono-enviar" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12l-11.61 1.87z"/></svg>
+              </button>
+            </form>
+            <div class="barra-home" aria-hidden="true"><i></i></div>
+          
+            <div class="pago" id="pago" hidden>
+              <div class="pago-caja" role="dialog" aria-labelledby="pago-titulo">
+                <div class="pago-top"><span id="pago-titulo">Pago de prueba</span><button type="button" class="pago-cerrar" id="pago-cerrar" aria-label="Cerrar">×</button></div>
+                <p class="pago-a">Autolavado Zaivum Demo</p>
+                <p class="pago-item" id="pago-item">3 fichas · bahía 5</p>
+                <p class="pago-monto" id="pago-monto">$11.000</p>
+                <p class="pago-detalle" id="pago-detalle">1 combo de 3</p>
+                <button type="button" class="pago-boton" id="pago-boton">Pagar</button>
+                <p class="pago-ok" id="pago-ok" hidden>✓ ¡Pago aprobado!</p>
+                <p class="pago-nota">En el sistema real acá se abre Mercado Pago. En esta demo no se cobra nada.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        <div class="col" data-col="encargado">
+          <p class="rol"><b>El encargado</b><span>en su puesto</span></p>
+          <div class="celular">
+          <div class="pantalla bloqueo">
+            <div class="isla" aria-hidden="true"><i></i><i></i></div>
+            <div class="bl-hora reloj">13:59</div>
+            <div class="bl-dia" id="bl-dia">hoy</div>
+            <div class="bl-notis" id="notis" aria-live="polite">
+              <p class="bl-vacio">Acá le llegan los avisos al encargado: a qué bahía ir y cuántas fichas llevar. Ya pagadas.</p>
+            </div>
+            <div class="barra-home" aria-hidden="true"><i></i></div>
+          </div>
+        </div>
+        </div>
+        <div class="col" data-col="dueno">
+          <p class="rol"><b>El dueño</b><span>en su casa</span></p>
+          <div class="celular">
+          <div class="pantalla">
+            <div class="isla" aria-hidden="true"><i></i><i></i></div>
+            <div class="barra-estado"><span class="reloj">13:59</span><span class="iconos" aria-hidden="true">5G
+                <svg width="16" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="14" width="3" height="8" rx=".5"/><rect x="7" y="10" width="3" height="12" rx=".5"/><rect x="12" y="6" width="3" height="16" rx=".5"/><rect x="17" y="2" width="3" height="20" rx=".5"/></svg>
+                <span class="bateria"><i></i></span></span></div>
+            <div class="cabecera">
+              <div class="izq">
+                <div class="avatar avatar-z">Z</div>
+                <div style="min-width:0"><div class="nombre">Zaivum IA · Tu negocio</div><div class="estado" id="estado-dueno">en línea</div></div>
+              </div>
+            </div>
+            <div class="chat" id="chat-dueno" aria-live="polite">
+              <div class="chip">Hoy</div>
+              <div class="burbuja bot">¡Hola! 👋 Soy el asistente de tu autolavado.
+Cada noche te mando el balance del día. Y si me mandás la foto de una factura, la cargo sola en los gastos.</div>
+              <div class="escribiendo" id="escribiendo-dueno"><span></span><span></span><span></span></div>
+            </div>
+            <div class="atajos">
+              <button type="button" class="atajo" id="btn-balance">📊 Ver el balance de hoy</button>
+              <label class="atajo" for="archivo-factura">📷 Mandar foto de una factura</label>
+              <input type="file" id="archivo-factura" accept="image/*" class="oculto">
+              <button type="button" class="atajo" id="btn-factura-ejemplo">🧾 Usar una factura de ejemplo</button>
+            </div>
+            <div class="barra-home" aria-hidden="true"><i></i></div>
+          </div>
+        </div>
+          <section class="caja" aria-labelledby="caja-titulo">
+          <div class="caja-cab">
+            <div><h3 id="caja-titulo">Caja de hoy</h3><p>Se anota sola con cada pago</p></div>
+            <div class="caja-total"><b id="caja-total">$0</b><span id="caja-cantidad">0 ventas</span></div>
+          </div>
+          <table class="caja-tabla">
+            <thead><tr><th>Hora</th><th>Bahía</th><th>Fichas</th><th>Monto</th></tr></thead>
+            <tbody id="caja-filas"></tbody>
+          </table>
+          <p class="caja-nota">Arranca con ventas de ejemplo. Tus compras aparecen resaltadas.</p>
+        </section>
+        </div>
+      </section>
+      <div class="aviso-flotante" id="aviso-flotante" hidden><span id="aviso-texto"></span><button type="button" id="aviso-ver">Ver</button></div>
+    </div>
+  </main>
+
+
+  <section class="banda-onda" aria-hidden="true">
+    <div class="contenedor">
+      <div class="visualizador" id="visualizador"></div>
+      <p class="leyenda-onda"><span class="vivo"></span>Procesando lenguaje natural, modismos argentinos y notas de voz al instante</p>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <div class="contenedor"><i>Zaivum IA</i> — Automatización conversacional para comercios y pymes.</div>
+  </footer>
+
+<script>
+  // La onda de voz de abajo: barras de distinta altura y tono.
+  (function dibujarOnda() {
+    const caja = document.getElementById("visualizador");
+    const tonos = ["t30", "t40", "t60", "t100", "glow", "blanco", "t100", "t80", "t100", "blanco"];
+    for (let i = 0; i < 44; i++) {
+      const forma = Math.sin((i / 43) * Math.PI);
+      const alto = 6 + 42 * forma * (0.45 + 0.55 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * 0.6)));
+      const barra = document.createElement("i");
+      barra.className = tonos[i % tonos.length];
+      barra.style.height = Math.round(alto) + "px";
+      caja.appendChild(barra);
+    }
+  })();
+
+  // Los botones "Probalo ahora" llevan al chat y dejan listo el campo para escribir.
+  document.querySelectorAll("[data-probar]").forEach((b) =>
+    b.addEventListener("click", () => {
+      document.querySelector(".celular").scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("texto").focus({ preventScroll: true });
+    }),
+  );
+
+  const chat = document.getElementById("chat");
+  const escribiendo = document.getElementById("escribiendo");
+  const estado = document.getElementById("estado");
+  const formulario = document.getElementById("formulario");
+  const campo = document.getElementById("texto");
+  const boton = document.getElementById("enviar");
+  let ultimoAutor = null;
+  let ocupado = false;
+
+  const hora = () => new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  // La hora de cada burbuja; las del cliente llevan las dos tildes azules de "leído".
+  function marcaDeHora(autor) {
+    const h = document.createElement("span");
+    h.className = "hora";
+    h.textContent = hora();
+    if (autor === "cliente") {
+      h.insertAdjacentHTML("beforeend", '<svg class="tildes" viewBox="0 0 16 15" aria-hidden="true"><path fill="currentColor" d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.376.126.502-.028l6.14-7.962a.418.418 0 0 0-.063-.542z"/><path fill="currentColor" d="M11.666 3.316l-.478-.372a.365.365 0 0 0-.51.063L5.322 9.879a.32.32 0 0 1-.484.033L2.58 7.747a.366.366 0 0 0-.512.038l-.403.469a.418.418 0 0 0 .038.541l3.059 2.937c.143.14.376.126.502-.028l6.14-7.962a.418.418 0 0 0-.063-.542z"/></svg>');
+    }
+    return h;
+  }
+
+  function actualizarReloj() { document.querySelectorAll(".reloj").forEach((e) => (e.textContent = hora())); }
+  actualizarReloj();
+  setInterval(actualizarReloj, 30000);
+
+  // ---------- Sesión: cada visitante tiene su propia charla ----------
+  let sesion = null;
+  let enlaceContacto = "";
+  let demoPublica = false;
+  async function nuevaSesion() {
+    const r = await fetch("/api/sesion", { method: "POST" }).then((x) => x.json());
+    sesion = r.sesion;
+  }
+  const listaSesion = nuevaSesion().catch(() => {});
+  // Agrega la sesión a cada pedido al bot.
+  async function pedirAlBot(ruta, opciones = {}) {
+    await listaSesion;
+    if (!sesion) await nuevaSesion();
+    return fetch(ruta, { method: "POST", ...opciones, headers: { ...(opciones.headers ?? {}), "X-Demo-Sesion": sesion } });
+  }
+
+  fetch("/api/info").then((r) => r.json()).then((info) => {
+    document.getElementById("nombre").textContent = info.nombre;
+    const iniciales = info.nombre.split(/\s+/).filter((p) => p.length > 2).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+    document.getElementById("avatar").textContent = iniciales || "IA";
+    document.title = "Demo autolavado · Zaivum IA";
+    // "Agendar demostración" abre tu WhatsApp, si cargaste SIREN_CONTACTO_WHATSAPP en el .env.
+    if (info.contacto) {
+      const agendar = document.getElementById("agendar");
+      agendar.href = `https://wa.me/${info.contacto}?text=${encodeURIComponent("Hola! Quiero agendar una demostración de Zaivum IA.")}`;
+      agendar.hidden = false;
+      enlaceContacto = agendar.href;
+    }
+    // Publicada en internet, se aclara que los pedidos son de prueba.
+    if (info.publica) {
+      demoPublica = true;
+      document.querySelector(".chip.sistema").textContent =
+        "Estás en el auto, en el autolavado. Pedile fichas al bot: escribiendo o con un audio. Los pagos son de prueba: no se cobra nada.";
+    }
+  });
+
+  // Pasa el formato de WhatsApp (*negrita*, _cursiva_) a la pantalla sin usar innerHTML.
+  // Los links (https://...) se pueden tocar. Devuelve los links de Mercado Pago que encontró.
+  function agregarConFormato(contenedor, texto) {
+    const pagos = [];
+    for (const trozo of texto.split(/(https:\/\/[^\s<>"]+)/g)) {
+      if (!trozo) continue;
+      if (!trozo.startsWith("https://")) {
+        agregarTextoConEstilo(contenedor, trozo);
+        continue;
+      }
+      const link = trozo.replace(/[.,;:!?)*_]+$/, "");
+      const a = document.createElement("a");
+      a.href = link;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = link;
+      contenedor.appendChild(a);
+      if (trozo.length > link.length) contenedor.appendChild(document.createTextNode(trozo.slice(link.length)));
+      try {
+        if (/(^|\.)mercadopago\./.test(new URL(link).hostname)) pagos.push(link);
+      } catch {}
+    }
+    return pagos;
+  }
+
+  function agregarTextoConEstilo(contenedor, texto) {
+    const partes = texto.split(/(\*[^*\n]+\*|_[^_\n]+_)/g);
+    for (const parte of partes) {
+      if (!parte) continue;
+      if (/^\*[^*\n]+\*$/.test(parte)) {
+        const b = document.createElement("strong");
+        b.textContent = parte.slice(1, -1);
+        contenedor.appendChild(b);
+      } else if (/^_[^_\n]+_$/.test(parte)) {
+        const i = document.createElement("em");
+        i.textContent = parte.slice(1, -1);
+        contenedor.appendChild(i);
+      } else {
+        contenedor.appendChild(document.createTextNode(parte));
+      }
+    }
+  }
+
+  function agregarBurbuja(autor, texto) {
+    const div = document.createElement("div");
+    div.className = `burbuja ${autor}` + (ultimoAutor === autor ? " seguido" : "");
+    const pagos = agregarConFormato(div, texto);
+    // Como en WhatsApp, un link conocido se muestra con una "vista previa" para tocar.
+    for (const link of pagos.slice(0, 1)) {
+      const tarjeta = document.createElement("a");
+      tarjeta.className = "tarjeta-pago";
+      tarjeta.href = link;
+      tarjeta.target = "_blank";
+      tarjeta.rel = "noopener noreferrer";
+      const icono = document.createElement("span");
+      icono.className = "tp-icono";
+      icono.textContent = "$";
+      const textos = document.createElement("span");
+      const titulo = document.createElement("b");
+      titulo.textContent = "Pagar con Mercado Pago";
+      const dominio = document.createElement("small");
+      // En la demo publicada se aclara también en la tarjeta: el pago es de prueba.
+      dominio.textContent = "Pago de prueba · tocá para pagar";
+      textos.append(titulo, dominio);
+      const flecha = document.createElement("span");
+      flecha.className = "tp-flecha";
+      flecha.setAttribute("aria-hidden", "true");
+      flecha.textContent = "›";
+      tarjeta.append(icono, textos, flecha);
+      div.appendChild(tarjeta);
+    }
+    div.appendChild(marcaDeHora(autor));
+    chat.insertBefore(div, escribiendo);
+    ultimoAutor = autor;
+    bajar();
+  }
+
+  function agregarAviso(texto) {
+    const div = document.createElement("div");
+    div.className = "chip aviso";
+    div.textContent = texto;
+    chat.insertBefore(div, escribiendo);
+    ultimoAutor = null;
+    bajar();
+  }
+
+  const bajar = () => { chat.scrollTop = chat.scrollHeight; };
+
+  function mostrarEscribiendo(si) {
+    escribiendo.classList.toggle("visible", si);
+    estado.textContent = si ? "escribiendo…" : "en línea";
+    if (si) chat.appendChild(escribiendo);
+    bajar();
+  }
+
+  // Manda algo al bot y muestra la respuesta. "pedir" hace el fetch;
+  // "alTranscribir" recibe lo que el bot entendió de un audio.
+  async function conversar(pedir, alTranscribir = () => {}) {
+    ocupado = true;
+    actualizarBoton();
+    // Un toque de espera antes de "escribiendo…", como una persona real.
+    const demora = setTimeout(() => mostrarEscribiendo(true), 500);
+    try {
+      const r = await pedir().then((x) => x.json());
+      clearTimeout(demora);
+      mostrarEscribiendo(false);
+      if (r.transcripcion) alTranscribir(r.transcripcion);
+      if (r.tipo === "respuesta") agregarBurbuja("bot", r.texto);
+      else if (r.tipo === "pausa") agregarAviso("La charla la sigue una persona del negocio.");
+      else if (r.tipo === "audio-largo") agregarAviso("El audio es demasiado largo.");
+      else if (r.tipo === "limite") avisarLimite(r.motivo);
+      else if (r.tipo === "sin-sesion") {
+        await nuevaSesion();
+        agregarAviso("La demo se reinició. Empezamos una charla nueva: mandá tu mensaje otra vez.");
+      }
+      else if (r.tipo === "error") agregarAviso("El bot tuvo un problema técnico. Probá de nuevo.");
+      else agregarAviso("El bot no respondió. Probá de nuevo.");
+    } catch {
+      clearTimeout(demora);
+      mostrarEscribiendo(false);
+      agregarAviso("No hay conexión con el bot. Probá de nuevo en un momento.");
+    } finally {
+      ocupado = false;
+      actualizarBoton();
+      campo.focus();
+    }
+  }
+
+  function enviar(texto) {
+    agregarBurbuja("cliente", texto);
+    return conversar(() =>
+      pedirAlBot("/api/mensaje", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) }),
+    );
+  }
+
+  // Los límites protegen la demo cuando está en internet.
+  function avisarLimite(motivo) {
+    const textos = {
+      ip: "Estás escribiendo muy rápido. Esperá un minuto y seguimos.",
+      sesion: "Llegaste al máximo de mensajes de esta demo. Tocá \"Nuevo cliente\" para empezar otra charla.",
+      dia: "La demo llegó a su límite de mensajes por hoy. Volvé mañana.",
+    };
+    let texto = textos[motivo] ?? "La demo llegó a un límite. Probá más tarde.";
+    if (enlaceContacto && motivo !== "ip") texto += " Si querés verla completa, tocá \"Agendar demostración\".";
+    agregarAviso(texto);
+  }
+
+  // ---------- Notas de voz ----------
+  const DURACION_MAXIMA = 120; // segundos
+  let grabacion = null; // { recorder, stream, partes, inicio, niveles, reloj, contexto }
+
+  const formatoTiempo = (seg) => `${Math.floor(seg / 60)}:${String(Math.floor(seg % 60)).padStart(2, "0")}`;
+
+  function tipoDeGrabacion() {
+    for (const t of ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/webm", "audio/mp4"]) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return "";
+  }
+
+  async function empezarGrabacion() {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      agregarAviso("Este navegador no permite grabar audio. Probá con Chrome o Edge.");
+      return;
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      agregarAviso("No pude usar el micrófono. Dale permiso en el candado de la barra de direcciones.");
+      return;
+    }
+    const tipo = tipoDeGrabacion();
+    const recorder = new MediaRecorder(stream, tipo ? { mimeType: tipo } : undefined);
+    const g = { recorder, stream, partes: [], inicio: Date.now(), niveles: [], contexto: null, enviar: false };
+    recorder.ondataavailable = (e) => e.data.size && g.partes.push(e.data);
+    recorder.onstop = () => terminarGrabacion(g);
+
+    // Medimos el volumen mientras grabás, para dibujar la "onda" de la nota de voz.
+    try {
+      g.contexto = new AudioContext();
+      const analizador = g.contexto.createAnalyser();
+      analizador.fftSize = 512;
+      g.contexto.createMediaStreamSource(stream).connect(analizador);
+      const muestras = new Uint8Array(analizador.fftSize);
+      g.medidor = setInterval(() => {
+        analizador.getByteTimeDomainData(muestras);
+        let suma = 0;
+        for (const v of muestras) suma += ((v - 128) / 128) ** 2;
+        g.niveles.push(Math.sqrt(suma / muestras.length));
+      }, 80);
+    } catch {}
+
+    g.reloj = setInterval(() => {
+      const seg = (Date.now() - g.inicio) / 1000;
+      document.getElementById("tiempo").textContent = formatoTiempo(seg);
+      if (seg >= DURACION_MAXIMA) detenerGrabacion(true);
+    }, 200);
+    document.getElementById("tiempo").textContent = "0:00";
+    recorder.start();
+    grabacion = g;
+    formulario.classList.add("modo-grabando");
+    actualizarBoton();
+  }
+
+  function detenerGrabacion(enviarla) {
+    const g = grabacion;
+    if (!g) return;
+    grabacion = null;
+    g.enviar = enviarla;
+    g.duracion = (Date.now() - g.inicio) / 1000;
+    clearInterval(g.reloj);
+    clearInterval(g.medidor);
+    if (g.recorder.state !== "inactive") g.recorder.stop();
+    formulario.classList.remove("modo-grabando");
+    actualizarBoton();
+  }
+
+  function terminarGrabacion(g) {
+    g.stream.getTracks().forEach((t) => t.stop());
+    g.contexto?.close().catch(() => {});
+    if (!g.enviar) return;
+    if (g.duracion < 0.6) {
+      agregarAviso("El audio fue muy corto. Tocá el micrófono, hablá y después tocá enviar.");
+      return;
+    }
+    const blob = new Blob(g.partes, { type: g.recorder.mimeType || "audio/webm" });
+    const burbuja = agregarNotaDeVoz(blob, g.duracion, g.niveles);
+    conversar(
+      () => pedirAlBot("/api/audio", { headers: { "Content-Type": blob.type || "audio/webm" }, body: blob }),
+      (texto) => {
+        const t = document.createElement("span");
+        t.className = "transcripcion";
+        t.textContent = `“${texto}”`;
+        burbuja.insertBefore(t, burbuja.querySelector(".hora"));
+        bajar();
+      },
+    );
+  }
+
+  // Arma la burbuja de la nota de voz: botón de play, onda y duración.
+  function agregarNotaDeVoz(blob, duracion, niveles) {
+    const div = document.createElement("div");
+    div.className = "burbuja cliente" + (ultimoAutor === "cliente" ? " seguido" : "");
+    div.style.whiteSpace = "normal";
+    const nota = document.createElement("div");
+    nota.className = "nota";
+
+    const audio = new Audio(URL.createObjectURL(blob));
+    const play = document.createElement("button");
+    play.type = "button";
+    play.className = "play";
+    play.setAttribute("aria-label", "Escuchar");
+    const iconoPlay = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
+    const iconoPausa = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+    play.innerHTML = iconoPlay;
+    play.addEventListener("click", () => (audio.paused ? audio.play() : audio.pause()));
+    audio.addEventListener("play", () => (play.innerHTML = iconoPausa));
+    audio.addEventListener("pause", () => (play.innerHTML = iconoPlay));
+    audio.addEventListener("ended", () => (play.innerHTML = iconoPlay));
+
+    const onda = document.createElement("div");
+    onda.className = "onda";
+    const BARRAS = 30;
+    const maximo = Math.max(0.02, ...niveles);
+    for (let i = 0; i < BARRAS; i++) {
+      const desde = Math.floor((i * niveles.length) / BARRAS);
+      const hasta = Math.max(desde + 1, Math.floor(((i + 1) * niveles.length) / BARRAS));
+      const tramo = niveles.slice(desde, hasta);
+      // La raíz hace que las partes suaves de la voz también se vean.
+      const nivel = tramo.length ? Math.sqrt(Math.max(...tramo) / maximo) : 0.3 + 0.4 * Math.abs(Math.sin(i * 1.7));
+      const barra = document.createElement("i");
+      barra.style.height = `${Math.round(4 + nivel * 22)}px`;
+      onda.appendChild(barra);
+    }
+    audio.addEventListener("timeupdate", () => {
+      const avance = audio.currentTime / (audio.duration && isFinite(audio.duration) ? audio.duration : duracion);
+      [...onda.children].forEach((b, i) => b.classList.toggle("oido", i / BARRAS < avance));
+    });
+    audio.addEventListener("ended", () => [...onda.children].forEach((b) => b.classList.remove("oido")));
+
+    const dur = document.createElement("span");
+    dur.className = "duracion";
+    dur.textContent = formatoTiempo(duracion);
+
+    nota.append(play, onda, dur);
+    div.appendChild(nota);
+    div.appendChild(marcaDeHora("cliente"));
+    chat.insertBefore(div, escribiendo);
+    ultimoAutor = "cliente";
+    bajar();
+    return div;
+  }
+
+  // El botón redondo: micrófono si no escribiste nada; avión de papel si hay texto o estás grabando.
+  function actualizarBoton() {
+    const mandar = grabacion || campo.value.trim().length > 0;
+    document.getElementById("icono-mic").style.display = mandar ? "none" : "";
+    document.getElementById("icono-enviar").style.display = mandar ? "" : "none";
+    boton.setAttribute("aria-label", grabacion ? "Enviar audio" : mandar ? "Enviar" : "Grabar audio");
+    boton.disabled = ocupado;
+  }
+
+  document.getElementById("cancelar").addEventListener("click", () => detenerGrabacion(false));
+
+  formulario.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (ocupado) return;
+    if (grabacion) return detenerGrabacion(true);
+    const texto = campo.value.trim();
+    if (!texto) return empezarGrabacion();
+    campo.value = "";
+    ajustarAltura();
+    actualizarBoton();
+    enviar(texto);
+  });
+
+  // Enter manda; Shift+Enter hace un salto de línea.
+  campo.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      // Enter solo manda texto: con el campo vacío no arranca a grabar.
+      if (campo.value.trim()) formulario.requestSubmit();
+    }
+  });
+  function ajustarAltura() {
+    campo.style.height = "auto";
+    campo.style.height = Math.min(campo.scrollHeight, 110) + "px";
+  }
+  campo.addEventListener("input", () => {
+    ajustarAltura();
+    actualizarBoton();
+  });
+
+  document.getElementById("nuevo").addEventListener("click", async () => {
+    await nuevaSesion();
+    for (const el of [...chat.querySelectorAll(".burbuja, .chip.aviso")]) el.remove();
+    ultimoAutor = null;
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) campo.focus();
+  });
+  document.getElementById("reanudar").addEventListener("click", async () => {
+    await pedirAlBot("/api/reanudar");
+    agregarAviso("El bot volvió a atender esta charla.");
+  });
+
+  // En la compu el cursor ya queda en el chat. En el celu no: abriría el
+  // teclado y saltaría directo al chat sin dejar ver la presentación.
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) campo.focus();
+
+  // ======================= Autolavado: encargado, dueño y caja =======================
+  const notis = document.getElementById("notis");
+  const chatDueno = document.getElementById("chat-dueno");
+  const escribiendoDueno = document.getElementById("escribiendo-dueno");
+  const pesos = (n) => "$" + Math.round(n).toLocaleString("es-AR");
+  const diaDeHoy = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+  document.getElementById("bl-dia").textContent = diaDeHoy.charAt(0).toUpperCase() + diaDeHoy.slice(1);
+  const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const enCelu = () => window.matchMedia("(max-width: 900px)").matches;
+
+  // ---------- Pestañas (en el celu se ve un celular por vez) ----------
+  function mostrarPestana(nombre) {
+    document.querySelectorAll(".pestana").forEach((b) => {
+      const activa = b.dataset.tab === nombre;
+      b.classList.toggle("activa", activa);
+      if (activa) b.querySelector(".nuevo-aviso")?.setAttribute("hidden", "");
+    });
+    document.querySelectorAll(".col").forEach((c) => c.classList.toggle("activa", c.dataset.col === nombre));
+    document.getElementById("aviso-flotante").hidden = true;
+  }
+  document.querySelectorAll(".pestana").forEach((b) => b.addEventListener("click", () => mostrarPestana(b.dataset.tab)));
+  let pestanaDelAviso = null;
+  let cierreDelAviso = null;
+  function avisarEnOtraPestana(nombre, texto) {
+    if (!enCelu()) return;
+    const boton = document.querySelector(`.pestana[data-tab="${nombre}"]`);
+    if (boton.classList.contains("activa")) return;
+    boton.querySelector(".nuevo-aviso")?.removeAttribute("hidden");
+    pestanaDelAviso = nombre;
+    document.getElementById("aviso-texto").textContent = texto;
+    document.getElementById("aviso-flotante").hidden = false;
+    clearTimeout(cierreDelAviso);
+    cierreDelAviso = setTimeout(() => (document.getElementById("aviso-flotante").hidden = true), 7000);
+  }
+  document.getElementById("aviso-ver").addEventListener("click", () => pestanaDelAviso && mostrarPestana(pestanaDelAviso));
+  document.querySelectorAll("[data-probar]").forEach((b) => b.addEventListener("click", () => mostrarPestana("cliente")));
+
+  // ---------- La caja ----------
+  let ultimaPropia = null;
+  function pintarCaja(c) {
+    if (!c || c.total === undefined) return;
+    document.getElementById("caja-total").textContent = pesos(c.total);
+    document.getElementById("caja-cantidad").textContent = `${c.cantidad} ventas · ${c.fichas} fichas`;
+    const filas = document.getElementById("caja-filas");
+    filas.replaceChildren();
+    for (const v of c.ventas) {
+      const tr = document.createElement("tr");
+      if (v.propia) tr.className = "propia" + (v.id === ultimaPropia ? " recien" : "");
+      for (const valor of [v.hora, v.bahia, v.fichas, pesos(v.total)]) {
+        const td = document.createElement("td");
+        td.textContent = valor;
+        tr.appendChild(td);
+      }
+      filas.appendChild(tr);
+    }
+  }
+  async function refrescarCaja() {
+    try { pintarCaja(await pedirAlBot("/api/caja").then((x) => x.json())); } catch {}
+  }
+  refrescarCaja();
+
+  // ---------- Pago de prueba ----------
+  const pago = document.getElementById("pago");
+  const botonPagar = document.getElementById("pago-boton");
+  let pedidoActual = null;
+
+  chat.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    const m = a?.href.match(/pref_id=DEMO-([A-Za-z0-9-]+)/);
+    if (!m) return;
+    e.preventDefault();
+    abrirPago(m[1]);
+  });
+
+  async function abrirPago(pedido) {
+    let r;
+    try { r = await pedirAlBot("/api/pedido", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pedido }) }).then((x) => x.json()); } catch { r = null; }
+    if (!r?.pedido) return agregarAviso("Ese link de pago ya no sirve. Pedí las fichas de nuevo.");
+    if (r.pagado) return agregarAviso("Ese pedido ya está pagado.");
+    pedidoActual = r.pedido;
+    document.getElementById("pago-item").textContent = `${r.fichas} ${r.fichas === 1 ? "ficha" : "fichas"} · bahía ${r.bahia}`;
+    document.getElementById("pago-monto").textContent = pesos(r.total);
+    document.getElementById("pago-detalle").textContent = r.detalle;
+    botonPagar.textContent = `Pagar ${pesos(r.total)}`;
+    botonPagar.disabled = false;
+    botonPagar.hidden = false;
+    document.getElementById("pago-ok").hidden = true;
+    pago.hidden = false;
+    botonPagar.focus();
+  }
+  const cerrarPago = () => { pago.hidden = true; pedidoActual = null; };
+  document.getElementById("pago-cerrar").addEventListener("click", cerrarPago);
+
+  botonPagar.addEventListener("click", async () => {
+    if (!pedidoActual) return;
+    const pedido = pedidoActual;
+    botonPagar.disabled = true;
+    botonPagar.textContent = "Procesando el pago…";
+    await espera(1100);
+    let r;
+    try { r = await pedirAlBot("/api/pagar", { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pedido }) }).then((x) => x.json()); } catch { r = null; }
+    if (!r || (r.tipo !== "aprobado" && r.tipo !== "ya-pagado")) {
+      cerrarPago();
+      return agregarAviso("No se pudo simular el pago. Probá de nuevo.");
+    }
+    botonPagar.hidden = true;
+    document.getElementById("pago-ok").hidden = false;
+    await espera(900);
+    cerrarPago();
+    if (r.tipo === "ya-pagado") return agregarAviso("Ese pedido ya estaba pagado.");
+    // Lo que pasa solo cuando se aprueba el pago:
+    ultimaPropia = pedido;
+    mostrarEscribiendo(true);
+    await espera(700);
+    mostrarEscribiendo(false);
+    agregarBurbuja("bot", r.cliente);           // 1. el cliente recibe la confirmación
+    await espera(500);
+    agregarNoti(r.encargado);                    // 2. al encargado le llega a dónde ir
+    pintarCaja(r.caja);                          // 3. la venta queda en la caja
+    avisarEnOtraPestana("encargado", "Al encargado le llegó el aviso");
+  });
+
+  function agregarNoti({ titulo, detalle, hora: h }) {
+    notis.querySelector(".bl-vacio")?.remove();
+    const n = document.createElement("div");
+    n.className = "noti";
+    n.innerHTML = '<div class="wa"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/></svg></div><div><div class="app"><span>WhatsApp · Zaivum IA</span><span></span></div><b></b><p></p></div>';
+    n.querySelector(".app span:last-child").textContent = h || "ahora";
+    n.querySelector("b").textContent = titulo;
+    const [pagado, ...resto] = detalle.split(" · ");
+    const ok = document.createElement("span");
+    ok.className = "ok";
+    ok.textContent = pagado;
+    n.querySelector("p").append(ok, document.createTextNode(resto.length ? " · " + resto.join(" · ") : ""));
+    notis.prepend(n);
+  }
+
+  // ---------- El dueño ----------
+  function burbujaDueno(texto) {
+    const div = document.createElement("div");
+    div.className = "burbuja bot";
+    agregarConFormato(div, texto);
+    div.appendChild(marcaDeHora("bot"));
+    chatDueno.insertBefore(div, escribiendoDueno);
+    chatDueno.scrollTop = chatDueno.scrollHeight;
+  }
+  function fotoDueno(src) {
+    const div = document.createElement("div");
+    div.className = "foto-factura";
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "Foto de la factura";
+    img.onload = () => (chatDueno.scrollTop = chatDueno.scrollHeight);
+    div.appendChild(img);
+    chatDueno.insertBefore(div, escribiendoDueno);
+    chatDueno.scrollTop = chatDueno.scrollHeight;
+  }
+  function escribiendoDelDueno(si) {
+    escribiendoDueno.classList.toggle("visible", si);
+    document.getElementById("estado-dueno").textContent = si ? "escribiendo…" : "en línea";
+    if (si) chatDueno.appendChild(escribiendoDueno);
+    chatDueno.scrollTop = chatDueno.scrollHeight;
+  }
+  const atajos = [...document.querySelectorAll(".atajo")];
+  let duenoOcupado = false;
+  async function tareaDelDueno(fn) {
+    if (duenoOcupado) return;
+    duenoOcupado = true;
+    atajos.forEach((a) => a.setAttribute("aria-disabled", "true"));
+    try { await fn(); } finally {
+      duenoOcupado = false;
+      atajos.forEach((a) => a.removeAttribute("aria-disabled"));
+    }
+  }
+
+  document.getElementById("btn-balance").addEventListener("click", () =>
+    tareaDelDueno(async () => {
+      escribiendoDelDueno(true);
+      let r;
+      try { r = await pedirAlBot("/api/balance").then((x) => x.json()); } catch { r = null; }
+      await espera(800);
+      escribiendoDelDueno(false);
+      if (!r?.texto) return burbujaDueno("No pude armar el balance. Probá de nuevo.");
+      burbujaDueno(r.texto);
+      if (r.alerta) {
+        escribiendoDelDueno(true);
+        await espera(1200);
+        escribiendoDelDueno(false);
+        burbujaDueno(r.alerta);
+      }
+    }),
+  );
+
+  async function mandarFactura(pedir) {
+    escribiendoDelDueno(true);
+    let r, estado = 0;
+    try {
+      const resp = await pedir();
+      estado = resp.status;
+      r = await resp.json();
+    } catch { r = null; }
+    escribiendoDelDueno(false);
+    if (estado === 413) return burbujaDueno("La foto es muy pesada. Probá con una de menos de 5 MB.");
+    if (r?.tipo === "limite") return burbujaDueno("La demo llegó a su límite de uso por ahora. Probá más tarde.");
+    if (r?.texto) return burbujaDueno(r.texto);
+    burbujaDueno("No pude leer la foto. Probá de nuevo.");
+  }
+
+  document.getElementById("archivo-factura").addEventListener("change", (e) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!archivo) return;
+    if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(archivo.type)) return burbujaDueno("Mandame una foto (JPG o PNG) de la factura.");
+    if (archivo.size > 5 * 1024 * 1024) return burbujaDueno("La foto es muy pesada. Probá con una de menos de 5 MB.");
+    tareaDelDueno(async () => {
+      fotoDueno(URL.createObjectURL(archivo));
+      await mandarFactura(() => pedirAlBot("/api/factura", { headers: { "Content-Type": archivo.type }, body: archivo }));
+    });
+  });
+  // La etiqueta de "mandar foto" también se bloquea mientras el bot trabaja.
+  document.querySelector('label[for="archivo-factura"]').addEventListener("click", (e) => { if (duenoOcupado) e.preventDefault(); });
+
+  document.getElementById("btn-factura-ejemplo").addEventListener("click", () =>
+    tareaDelDueno(async () => {
+      fotoDueno("/factura-ejemplo.png");
+      await mandarFactura(() => pedirAlBot("/api/factura-ejemplo"));
+    }),
+  );
+
+  // "Empezar de nuevo": cliente nuevo, celulares y caja limpios.
+  document.getElementById("nuevo").addEventListener("click", async () => {
+    notis.replaceChildren();
+    const vacio = document.createElement("p");
+    vacio.className = "bl-vacio";
+    vacio.textContent = "Acá le llegan los avisos al encargado: a qué bahía ir y cuántas fichas llevar. Ya pagadas.";
+    notis.appendChild(vacio);
+    for (const el of [...chatDueno.querySelectorAll(".burbuja, .foto-factura")].slice(1)) el.remove();
+    ultimaPropia = null;
+    mostrarPestana("cliente");
+    await espera(400);
+    refrescarCaja();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "id": "autolavado-demo",
+  "nombre": "Autolavado Zaivum Demo",
+  "rubro": "autolavado self-service con bahías de lavado y venta de fichas (negocio de ejemplo para demos)",
+  "tono": "cercano, rápido y claro, en español rioplatense (voseo). Mensajes muy cortos: el cliente está en el auto",
+  "negocio": {
+    "direccion": "Av. Ejemplo 789 (dirección de ejemplo)",
+    "horarios": "Todos los días de 8:00 a 22:00.",
+    "formasDePago": ["Mercado Pago (link por WhatsApp)"],
+    "preguntasFrecuentes": [
+      {
+        "pregunta": "¿Cuánto dura una ficha?",
+        "respuesta": "Cada ficha da unos 4 minutos de máquina (agua a presión, espuma o enjuague). Un lavado completo suele llevar 3 fichas."
+      },
+      {
+        "pregunta": "¿Cómo compro fichas?",
+        "respuesta": "Por este chat: decinos en qué bahía estás y cuántas fichas querés, pagás con el link de Mercado Pago y el encargado te las lleva a la bahía. No hace falta bajarse del auto."
+      },
+      {
+        "pregunta": "¿La máquina no funciona?",
+        "respuesta": "Avisanos por acá con el número de bahía y le pasamos el aviso al encargado."
+      }
+    ]
+  },
+  "datos": {
+    "tipo": "local",
+    "carpeta": "datos/autolavado-demo"
+  },
+  "herramientas": ["vender_fichas", "derivar_a_humano"],
+  "fichas": {
+    "bahias": 6,
+    "precios": [
+      { "cantidad": 1, "precio": 4000 },
+      { "cantidad": 3, "precio": 11000 },
+      { "cantidad": 5, "precio": 17500 }
+    ],
+    "maximoPorCompra": 10,
+    "gastosFijosMensuales": [
+      { "concepto": "Alquiler del predio", "monto": 1200000 },
+      { "concepto": "Sueldos (2 encargados)", "monto": 2400000 },
+      { "concepto": "Luz, agua y gas", "monto": 750000 },
+      { "concepto": "Internet, seguro y sistema", "monto": 150000 }
+    ],
+    "reserva": 2000000
+  },
+  "derivacion": {
+    "pausaMinutos": 60
+  }
+}

@@ -5,6 +5,8 @@
 // sola vez) para que la IA sepa la fecha y hora actual: así puede responder
 // "¿están abiertos ahora?".
 
+import { listaDePrecios } from "../fichas/ventas.js";
+
 export function armarPrompt(empresa, ahora = new Date()) {
   const n = empresa.negocio;
   const fechaHora = ahora.toLocaleString("es-AR", {
@@ -42,6 +44,8 @@ export function armarPrompt(empresa, ahora = new Date()) {
       "Los pagos se hacen con el link de Mercado Pago que te devuelve confirmar_pedido. Pasalo tal cual, completo. Nunca pidas datos de tarjeta por chat ni inventes otro link.",
     usa("agendar_turnos") &&
       "Para sacar un turno: averiguá qué servicio quiere y qué día. Usá ver_turnos_libres para ese día y ofrecé solo horarios de la lista. Cuando el cliente elija uno y sepas su nombre, usá reservar_turno. Nunca digas que un turno está reservado si reservar_turno no te lo confirmó. Si quiere cancelar o cambiar un turno ya sacado, usá derivar_a_humano.",
+    usa("vender_fichas") &&
+      `Vendés fichas para las bahías de lavado. Hay ${empresa.fichas.bahias} bahías (de la 1 a la ${empresa.fichas.bahias}). Precios: ${listaDePrecios(empresa.fichas.precios)}. Para vender necesitás dos datos: en qué bahía está el cliente y cuántas fichas quiere. Si falta alguno, preguntalo (no preguntes lo que ya te dijo). Con los dos datos, usá vender_fichas y pasale el link de pago tal cual. No digas que está pagado ni que ya le llevan las fichas: cuando el pago se aprueba, el sistema le avisa solo al cliente y al encargado. Si dice una bahía que no existe, preguntale de nuevo.`,
     usa("derivar_a_humano") &&
       "Usá derivar_a_humano si el cliente pide hablar con una persona, tiene un reclamo o está molesto, o pregunta algo que no podés resolver con los datos. Después avisale que una persona del equipo le va a responder por este mismo chat.",
     "Si te preguntan si sos una persona, decí la verdad: sos el asistente virtual del negocio.",
@@ -49,7 +53,7 @@ export function armarPrompt(empresa, ahora = new Date()) {
   ].filter(Boolean);
 
   return `Sos el asistente de WhatsApp de ${empresa.nombre} (${empresa.rubro}).
-Atendés a los clientes: respondés consultas, das precios y stock${usa("tomar_pedidos") ? " y tomás pedidos" : ""}${usa("agendar_turnos") ? " y das turnos" : ""}.
+Atendés a los clientes: respondés consultas, das precios y stock${usa("tomar_pedidos") ? " y tomás pedidos" : ""}${usa("agendar_turnos") ? " y das turnos" : ""}${usa("vender_fichas") ? " y vendés fichas de lavado" : ""}.
 
 CÓMO HABLÁS
 - Tono: ${empresa.tono}.

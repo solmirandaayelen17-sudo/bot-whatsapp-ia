@@ -6,6 +6,7 @@
 // traduce "su" formato a { empresa, telefono, nombre, texto } y manda la respuesta.
 
 import { crearAgenda as crearAgendaDeEmpresa } from "../agenda/crearAgenda.js";
+import { crearLibroDeFichas } from "../fichas/ventas.js";
 import { MemorySaver } from "@langchain/langgraph";
 import { crearAgente } from "../agente/crearAgente.js";
 import { crearPausas } from "./pausas.js";
@@ -59,6 +60,7 @@ export function crearProcesador({
   memoria = new MemorySaver(),
   cobros, // para reemplazar Mercado Pago en las pruebas
   crearAgenda = crearAgendaDeEmpresa, // dónde se guardan los turnos (se reemplaza en la demo pública y en las pruebas)
+  libroFichas = crearLibroDeFichas(), // la caja de los autolavados (ventas de fichas)
 }) {
   // Links de pago creados en el turno actual de cada charla. POR QUÉ: la IA a
   // veces resume o corta un link largo. Si en su respuesta no está el link
@@ -92,6 +94,7 @@ export function crearProcesador({
           cobros,
           enlaces,
           agenda: crearAgenda(empresa),
+          libroFichas,
         })
       );
     }

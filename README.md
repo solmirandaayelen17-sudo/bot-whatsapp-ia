@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-61%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-70%20OK-brightgreen)
 
 ## Demo
 
@@ -25,6 +25,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 - **Agente de IA con herramientas.** No es un menú de "marcá 1, 2 o 3": entiende lenguaje natural y *hace cosas*, como buscar productos, cotizar, anotar pedidos o derivar a una persona.
 - **Entiende audios.** Las notas de voz se pasan a texto con Gemini (la misma clave, sin otro servicio) y el bot responde como si le hubieran escrito.
+- **Vende fichas en autolavados.** El cliente pide desde el auto, paga con el link y al encargado le llega a qué bahía llevarlas. Cada venta se anota sola en la caja, el dueño carga facturas con una foto (las lee Gemini) y recibe un balance diario con alerta si el negocio viene bajando.
 - **Da turnos.** Mira los horarios libres en el Google Calendar del negocio, reserva el turno y puede cobrarlo con Mercado Pago. Los horarios los calcula el código, así la IA no puede ofrecer uno ocupado.
 - **Cobra con Mercado Pago.** Al confirmar el pedido, el cliente recibe un link de pago armado con los precios de la planilla. La IA no puede cambiar el monto.
 - **La IA decide, el código valida.** El código controla que el producto exista y que haya stock, y calcula el total. La IA no puede inventar precios, vender lo que no hay ni anotar un pedido sin que el cliente confirme.
@@ -32,7 +33,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **61 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **70 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -69,7 +70,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (61 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (70 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -324,6 +325,24 @@ Al confirmar un pedido, el bot le manda al cliente un link para pagar. Para prob
 > Con un cliente real se usa el Access Token de producción de **su** cuenta de Mercado Pago, y la plata le llega a él.
 
 ---
+
+### Demo para autolavados (fichas por WhatsApp)
+
+Una demo con **3 celulares**: el cliente (chatea con el bot real), el encargado (le llegan los avisos) y el dueño (balance diario y facturas por foto), más la caja del día.
+
+```
+npm run demo -- autolavado-demo
+```
+
+- El cliente pide fichas, el bot pregunta la bahía y la cantidad y arma el precio más barato con los combos (`vender_fichas`).
+- El pago es **de prueba**, propio de la página: no usa Mercado Pago ni hace falta token.
+- Al aprobarse el pago, el sistema le avisa al cliente y al encargado y anota la venta en la caja. El encargado no hace nada.
+- La caja de cada visitante arranca con un día de **ventas de ejemplo** y 3 semanas de historia, así el balance y la alerta tienen sentido.
+- "Usar una factura de ejemplo" manda `src/canales/factura-ejemplo.png` (un comercio inventado). Una foto propia también la lee Gemini de verdad.
+
+Para publicarla en Railway: un **segundo servicio** del mismo repositorio, con las mismas variables pero `DEMO_EMPRESA=autolavado-demo`. No necesita `GOOGLE_CREDENTIALS_JSON` ni Mercado Pago, porque los datos están en `datos/autolavado-demo`.
+
+Para un autolavado real falta el aviso de pago de Mercado Pago (notificaciones) y mandar los avisos y el balance por WhatsApp. La lógica (precios, caja, avisos, balance) es la misma que usa la demo.
 
 ### Agenda de turnos (Google Calendar)
 

@@ -15,6 +15,7 @@ import * as z from "zod";
 import { buscarEnCatalogo, validarPedido, formatearPesos } from "../datos/productos.js";
 import { crearLinkMercadoPago, HORAS_DE_VALIDEZ } from "../pagos/mercadoPago.js";
 import { mensajeDeError } from "../nucleo/errores.js";
+import { mejorPrecio, describirCombinacion, fichasTexto } from "../fichas/ventas.js";
 import { horariosLibres, problemaConLaFecha, fechaLegible, esHoraValida, instante, limitesDelDia } from "../agenda/horarios.js";
 
 // Formato fijo de 24 horas ("29/09/2026, 14:58"). Sin esto, algunas compus
@@ -40,7 +41,8 @@ function nuevoIdPedido() {
 // cobros.crearLink: arma el link de pago (Mercado Pago). Se puede reemplazar en las pruebas.
 // enlaces: donde se guarda el link para que el procesador se asegure de que llegue al cliente.
 // agenda: dónde se guardan los turnos (Google Calendar o en memoria), si la empresa toma turnos.
-export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros = { crearLink: crearLinkMercadoPago }, enlaces = null, agenda = null }) {
+// libroFichas: la caja del autolavado (ventas de fichas), si la empresa vende fichas.
+export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros = { crearLink: crearLinkMercadoPago }, enlaces = null, agenda = null, libroFichas = null }) {
   const cobraConMercadoPago = empresa.herramientas.includes("cobrar_mercado_pago");
 
   const buscarProductos = tool(
@@ -376,6 +378,64 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros 
     }
   );
 
+  // ---- Venta de fichas (autolavados) ----
+  const venderFichas = tool(
+    async ({ bahia, cantidad }, runtime) => {
+      const ctx = runtime?.context ?? {};
+      const cfg = empresa.fichas;
+      if (!Number.isInteger(bahia) || bahia < 1 || bahia > cfg.bahias) {
+        return JSON.stringify({ ok: false, instruccion: `La bahía ${bahia} no existe: hay de la 1 a la ${cfg.bahias}. Preguntale al cliente en qué bahía está.` });
+      }
+      if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > cfg.maximoPorCompra) {
+        return JSON.stringify({ ok: false, instruccion: `Se pueden comprar de 1 a ${cfg.maximoPorCompra} fichas por vez. Preguntale cuántas quiere.` });
+      }
+      const precio = mejorPrecio(cfg.precios, cantidad);
+      const id = "F-" + Date.now().toString(36).toUpperCase().slice(-5);
+      const detalle = describirCombinacion(precio.detalle);
+      let link = "";
+      try {
+        ({ link } = await cobros.crearLink({
+          empresa,
+          pedido: { id, lineas: [{ codigo: "FICHAS", nombre: `${fichasTexto(cantidad)} · bahía ${bahia}`, cantidad: 1, precio: precio.total }] },
+        }));
+      } catch (error) {
+        console.error(`[${empresa.id}] No pude crear el link de pago de las fichas ${id}: ${mensajeDeError(error)}`);
+      }
+      if (!link) {
+        return JSON.stringify({ ok: false, instruccion: "No se pudo generar el link de pago. Pedile disculpas y decile que pague en la caja del lavadero." });
+      }
+      libroFichas.registrarPendiente(libroFichas.claveDe(ctx, empresa), {
+        id,
+        bahia,
+        fichas: cantidad,
+        total: precio.total,
+        detalle,
+        cliente: ctx.nombre ?? "",
+        telefono: ctx.telefono ?? "",
+        creada: new Date(),
+      });
+      if (ctx.hiloId) enlaces?.guardar(ctx.hiloId, link);
+      return JSON.stringify({
+        ok: true,
+        pedido: id,
+        bahia,
+        fichas: cantidad,
+        detalle,
+        total: formatearPesos(precio.total),
+        link_de_pago: link,
+        instruccion: "Pasale al cliente el total y el link de pago, copiado exacto y completo, solo en su renglón. Decile que apenas se apruebe el pago le llevan las fichas a su bahía.",
+      });
+    },
+    {
+      name: "vender_fichas",
+      description: "Arma el link de pago de las fichas de lavado. Usala cuando ya sabés en qué bahía está el cliente y cuántas fichas quiere.",
+      schema: z.object({
+        bahia: z.number().int().describe("Número de bahía donde está el auto del cliente."),
+        cantidad: z.number().int().describe("Cuántas fichas quiere en total. El sistema arma solo el precio más conveniente con los combos."),
+      }),
+    }
+  );
+
   // Lo que se activa en el JSON de la empresa son "capacidades"; cada una trae
   // una o más herramientas. Cada empresa activa solo las de su paquete.
   const porCapacidad = {
@@ -384,6 +444,7 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros 
     derivar_a_humano: [derivarAHumano],
     cobrar_mercado_pago: [], // no es una herramienta aparte: cambia lo que hacen confirmar_pedido y reservar_turno
     agendar_turnos: agenda ? [verTurnosLibres, reservarTurno] : [],
+    vender_fichas: libroFichas && empresa.fichas ? [venderFichas] : [],
   };
   return empresa.herramientas.flatMap((capacidad) => porCapacidad[capacidad]);
 }

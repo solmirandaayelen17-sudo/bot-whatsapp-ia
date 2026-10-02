@@ -20,10 +20,10 @@ const esquemaContexto = z.object({
   turno: z.number(),
 });
 
-export function crearAgente({ empresa, modelo, respaldos = [], fuente, pausas, pendientes, memoria, cobros, enlaces, agenda }) {
+export function crearAgente({ empresa, modelo, respaldos = [], fuente, pausas, pendientes, memoria, cobros, enlaces, agenda, libroFichas }) {
   return createAgent({
     model: modelo,
-    tools: crearHerramientas({ empresa, fuente, pausas, pendientes, cobros, enlaces, agenda }),
+    tools: crearHerramientas({ empresa, fuente, pausas, pendientes, cobros, enlaces, agenda, libroFichas }),
     contextSchema: esquemaContexto,
     // La memoria (checkpointer) guarda el historial de cada conversación.
     // Cada cliente de cada empresa tiene su propio "hilo" (thread_id).
