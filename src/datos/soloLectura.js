@@ -9,6 +9,7 @@ export function soloLectura(fuente) {
     ...fuente,
     descripcion: `${fuente.descripcion} (solo lectura: los pedidos de prueba no se anotan)`,
     listarProductos: () => fuente.listarProductos(),
+    listarRegistros: (hoja) => fuente.listarRegistros?.(hoja) ?? [],
     async agregarRegistro(hoja) {
       console.log(`[demo pública] Un registro de prueba en "${hoja}" no se guardó en la planilla.`);
     },

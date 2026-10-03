@@ -79,10 +79,13 @@ const esquemaEmpresa = z.object({
       dueno: z.string().optional(), // WhatsApp del dueño, para el balance de cada noche
       gastosFijosMensuales: z.array(z.object({ concepto: z.string(), monto: z.number().nonnegative() })).optional(),
       reserva: z.number().nonnegative().optional(), // la plata que tiene ahorrada el negocio (para la alerta)
+      horaBalance: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'la hora va como "22:00"').optional(), // cuándo mandar el balance
+      // Plantillas aprobadas por Meta para escribirles al encargado y al dueño aunque no hayan escrito en 24 h.
+      plantillas: z.object({ aviso: z.string().optional(), balance: z.string().optional(), idioma: z.string().optional() }).optional(),
     })
     .refine((f) => f.precios.some((p) => p.cantidad === 1), { message: "tiene que haber un precio para 1 ficha suelta" })
     .optional(),
-  mercadoPago: z.object({ tokenEnv: z.string().optional() }).optional(),
+  mercadoPago: z.object({ tokenEnv: z.string().optional(), webhookSecretEnv: z.string().optional() }).optional(),
   derivacion: z.object({ pausaMinutos: z.number().int().positive() }).optional(),
 });
 
@@ -102,9 +105,12 @@ function conValoresPorDefecto(e) {
       tokenEnv: e.whatsapp?.tokenEnv ?? "WHATSAPP_TOKEN",
     },
     herramientas: e.herramientas ?? [...HERRAMIENTAS_POR_DEFECTO],
-    mercadoPago: { tokenEnv: e.mercadoPago?.tokenEnv ?? "MERCADOPAGO_ACCESS_TOKEN" },
+    mercadoPago: {
+      tokenEnv: e.mercadoPago?.tokenEnv ?? "MERCADOPAGO_ACCESS_TOKEN",
+      webhookSecretEnv: e.mercadoPago?.webhookSecretEnv ?? "MERCADOPAGO_WEBHOOK_SECRET",
+    },
     derivacion: { pausaMinutos: e.derivacion?.pausaMinutos ?? 120 },
-    fichas: e.fichas && { maximoPorCompra: 10, gastosFijosMensuales: [], reserva: 0, ...e.fichas },
+    fichas: e.fichas && { maximoPorCompra: 10, gastosFijosMensuales: [], reserva: 0, horaBalance: "22:00", ...e.fichas },
     agenda: e.agenda && {
       ...e.agenda,
       duracionMinutos: e.agenda.duracionMinutos ?? 30,

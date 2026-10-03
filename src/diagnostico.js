@@ -135,6 +135,24 @@ if (conCalendario.length) {
   }
 }
 
+const conFichas = [...cargarEmpresas().porId.values()].filter((e) => e.herramientas.includes("vender_fichas"));
+if (conFichas.length) {
+  console.log("\n8) Autolavados (venta de fichas)");
+  for (const empresa of conFichas) {
+    try {
+      const fuente = crearFuente(empresa);
+      const [ventas, gastos] = await Promise.all([fuente.listarRegistros("Ventas"), fuente.listarRegistros("Gastos")]);
+      ok(`${empresa.id}: leo las pestañas Ventas (${ventas.length} filas) y Gastos (${gastos.length} filas).`);
+    } catch (error) {
+      mal(`${empresa.id}: ${mensajeDeError(error)}`);
+      console.log('       -> Creá en la planilla las pestañas "Ventas" y "Gastos" con sus encabezados (ver README, "Sistema real del autolavado").');
+    }
+    if (!empresa.fichas.encargado) aviso(`${empresa.id}: falta fichas.encargado (el WhatsApp del encargado): nadie va a recibir los avisos de fichas.`);
+    if (!empresa.fichas.dueno) aviso(`${empresa.id}: falta fichas.dueno (el WhatsApp del dueño): no va a haber balance diario ni facturas por foto.`);
+  }
+  if (!process.env.URL_PUBLICA) aviso("Falta URL_PUBLICA en el .env: sin eso, Mercado Pago no avisa los pagos aprobados.");
+}
+
 console.log("\nSi todo dio OK, probá el chat: npm run consola -- gomeria-demo (o la demo con micrófono: npm run demo -- gomeria-demo)\n");
 
 // Un audio WAV armado en el momento: 1 segundo de un pitido suave. Sirve para

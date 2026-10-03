@@ -21,6 +21,13 @@ export function crearFuenteLocal(carpeta) {
       return filasAObjetos(parsearCsv(texto)).map(normalizarProducto).filter(Boolean);
     },
 
+    // Lee una pestaña entera (por ejemplo Ventas, para el balance). Si no existe, está vacía.
+    async listarRegistros(hoja) {
+      const archivo = archivoDe(hoja);
+      if (!fs.existsSync(archivo)) return [];
+      return filasAObjetos(parsearCsv(fs.readFileSync(archivo, "utf8")));
+    },
+
     async agregarRegistro(hoja, registro) {
       const columnas = ENCABEZADOS[hoja];
       if (!columnas) throw new Error(`Hoja desconocida: ${hoja}`);

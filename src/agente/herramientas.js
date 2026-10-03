@@ -172,7 +172,10 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros 
             cantidad: l.cantidad,
             precio: l.producto.precio,
           }));
-          ({ link } = await cobros.crearLink({ empresa, pedido: { id, lineas } }));
+          ({ link } = await cobros.crearLink({
+            empresa,
+            pedido: { id, lineas, datos: { tipo: "pedido", telefono: ctx.telefono ?? "", cliente: nombre_cliente } },
+          }));
           if (link && ctx.hiloId) enlaces?.guardar(ctx.hiloId, link);
         } catch (error) {
           console.error(`[${empresa.id}] No pude crear el link de Mercado Pago del pedido ${id}: ${mensajeDeError(error)}`);
@@ -345,7 +348,11 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros 
         try {
           ({ link } = await cobros.crearLink({
             empresa,
-            pedido: { id: turno, lineas: [{ codigo: servicio.codigo, nombre: `Turno: ${servicio.nombre}`, cantidad: 1, precio: servicio.precio }] },
+            pedido: {
+              id: turno,
+              lineas: [{ codigo: servicio.codigo, nombre: `Turno: ${servicio.nombre}`, cantidad: 1, precio: servicio.precio }],
+              datos: { tipo: "turno", telefono: ctx.telefono ?? "", cliente: nombre_cliente },
+            },
           }));
           if (link && ctx.hiloId) enlaces?.guardar(ctx.hiloId, link);
         } catch (error) {
@@ -396,7 +403,12 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros 
       try {
         ({ link } = await cobros.crearLink({
           empresa,
-          pedido: { id, lineas: [{ codigo: "FICHAS", nombre: `${fichasTexto(cantidad)} · bahía ${bahia}`, cantidad: 1, precio: precio.total }] },
+          pedido: {
+            id,
+            lineas: [{ codigo: "FICHAS", nombre: `${fichasTexto(cantidad)} · bahía ${bahia}`, cantidad: 1, precio: precio.total }],
+            // Viaja dentro del pago: con esto, al aprobarse, se sabe a qué bahía llevar cuántas fichas.
+            datos: { tipo: "fichas", bahia, fichas: cantidad, telefono: ctx.telefono ?? "", cliente: ctx.nombre ?? "" },
+          },
         }));
       } catch (error) {
         console.error(`[${empresa.id}] No pude crear el link de pago de las fichas ${id}: ${mensajeDeError(error)}`);

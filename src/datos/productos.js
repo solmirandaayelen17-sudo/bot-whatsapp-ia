@@ -10,6 +10,11 @@ export const ENCABEZADOS = {
   // "pago" (al final, para no mover las columnas que ya existen): el link de Mercado Pago.
   Pedidos: ["id", "fecha", "telefono", "cliente", "detalle", "total", "modalidad", "notas", "estado", "pago"],
   Derivaciones: ["fecha", "telefono", "cliente", "motivo", "estado"],
+  // Pagos aprobados por Mercado Pago (los anota el aviso de pago, solo).
+  Pagos: ["fecha", "hora", "pedido", "telefono", "cliente", "total", "id_pago"],
+  // Autolavados: cada venta de fichas pagada y cada gasto (facturas por foto).
+  Ventas: ["id", "fecha", "hora", "telefono", "cliente", "bahia", "fichas", "total", "id_pago"],
+  Gastos: ["fecha", "hora", "proveedor", "concepto", "total", "origen"],
 };
 
 // Entiende los precios escritos a la argentina ("89.000,50") y a la

@@ -58,6 +58,12 @@ export function crearFuenteGoogleSheets(spreadsheetId) {
       return productos;
     },
 
+    // Lee una pestaña entera (por ejemplo Ventas, para el balance).
+    async listarRegistros(hoja) {
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: hoja, valueRenderOption: "UNFORMATTED_VALUE" });
+      return filasAObjetos(res.data.values ?? []);
+    },
+
     async agregarRegistro(hoja, registro) {
       const columnas = ENCABEZADOS[hoja];
       if (!columnas) throw new Error(`Hoja desconocida: ${hoja}`);

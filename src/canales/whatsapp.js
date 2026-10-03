@@ -63,6 +63,7 @@ export function extraerMensajes(aviso) {
           tipo: m.type,
           texto,
           audio: m.type === "audio" && m.audio?.id ? { id: m.audio.id, mimeType: m.audio.mime_type } : null,
+          imagen: m.type === "image" && m.image?.id ? { id: m.image.id, mimeType: m.image.mime_type } : null,
         });
       }
     }
@@ -99,6 +100,30 @@ export async function enviarTextoWhatsApp({ empresa, para, texto }) {
   }
 }
 
+// Mensaje con PLANTILLA aprobada por Meta. Hace falta para escribirle a alguien
+// que no le escribió al número en las últimas 24 horas (por ejemplo el aviso al
+// encargado o el balance de la noche al dueño).
+export async function enviarPlantillaWhatsApp({ empresa, para, nombre, idioma = "es_AR", parametros = [] }) {
+  const token = process.env[empresa.whatsapp.tokenEnv];
+  if (!token) throw new Error(`Falta ${empresa.whatsapp.tokenEnv} en el .env (token de WhatsApp de ${empresa.id}).`);
+  const url = `https://graph.facebook.com/${VERSION_API}/${empresa.whatsapp.phoneNumberId}/messages`;
+  const respuesta = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: normalizarDestino(para),
+      type: "template",
+      template: {
+        name: nombre,
+        language: { code: idioma },
+        components: parametros.length ? [{ type: "body", parameters: parametros.map((t) => ({ type: "text", text: String(t) })) }] : [],
+      },
+    }),
+  });
+  if (!respuesta.ok) throw new Error(`WhatsApp respondió ${respuesta.status} a la plantilla ${nombre}: ${await respuesta.text()}`);
+}
+
 // Los audios no vienen en el aviso: Meta manda un id. Con ese id se pide la
 // dirección del archivo y después se descarga (las dos cosas con el token).
 export async function descargarMediaWhatsApp({ empresa, mediaId }) {
@@ -121,6 +146,9 @@ export function crearRouterWhatsApp({
   enviarTexto = enviarTextoWhatsApp,
   descargarMedia = descargarMediaWhatsApp,
   transcribir = null, // si no se pasa, los audios reciben el aviso de "solo texto"
+  // atender(empresa, mensaje, responder): para mensajes especiales (el dueño o el
+  // encargado de un autolavado). Si devuelve true, el mensaje ya se atendió.
+  atender = null,
   verifyToken,
   appSecret,
 }) {
@@ -180,6 +208,7 @@ export function crearRouterWhatsApp({
       return;
     }
     const responder = (texto) => enviarTexto({ empresa, para: m.de, texto });
+    if (atender && (await atender(empresa, m, responder))) return;
 
     let texto = m.texto;
     let transcripcion = null;

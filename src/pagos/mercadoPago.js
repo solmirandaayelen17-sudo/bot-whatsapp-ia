@@ -10,6 +10,8 @@
 // Cada negocio cobra en SU cuenta de Mercado Pago: el token de cada empresa va
 // en el .env (el nombre de la variable se elige en el JSON de la empresa).
 
+import crypto from "node:crypto";
+
 const API = "https://api.mercadopago.com";
 export const HORAS_DE_VALIDEZ = 48;
 
@@ -20,8 +22,19 @@ export function fechaConZonaArgentina(fecha) {
   return local.toISOString().replace("Z", "-03:00");
 }
 
-// pedido: { id, lineas: [{ codigo, nombre, cantidad, precio }] }
-export function armarPreferencia({ empresa, pedido, ahora = new Date() }) {
+// La dirección donde Mercado Pago avisa cuando se aprueba un pago. Hace falta
+// que el servidor esté en internet (URL_PUBLICA, por ejemplo la de Railway).
+export function direccionDeAvisos(empresa, entorno = process.env) {
+  const base = entorno.URL_PUBLICA?.trim().replace(/\/+$/, "");
+  return base ? `${base}/webhooks/mercadopago/${empresa.id}` : null;
+}
+
+// pedido: { id, lineas: [{ codigo, nombre, cantidad, precio }], datos? }
+// datos: lo que hace falta saber cuando se aprueba el pago (teléfono del cliente,
+// bahía, fichas...). Viaja dentro del pago, así no se pierde aunque el servidor
+// se reinicie entre que el cliente recibe el link y paga.
+export function armarPreferencia({ empresa, pedido, ahora = new Date(), entorno = process.env }) {
+  const avisos = direccionDeAvisos(empresa, entorno);
   return {
     items: pedido.lineas.map((l) => ({
       id: String(l.codigo),
@@ -36,7 +49,8 @@ export function armarPreferencia({ empresa, pedido, ahora = new Date() }) {
     expires: true,
     expiration_date_from: fechaConZonaArgentina(ahora),
     expiration_date_to: fechaConZonaArgentina(new Date(ahora.getTime() + HORAS_DE_VALIDEZ * 60 * 60_000)),
-    metadata: { empresa: empresa.id, pedido: pedido.id },
+    metadata: { ...(pedido.datos ?? {}), empresa: empresa.id, pedido: pedido.id },
+    ...(avisos ? { notification_url: avisos } : {}),
   };
 }
 
@@ -103,4 +117,40 @@ export function crearCobrosSoloDePrueba({ verificar = verificarCuentaMercadoPago
       return crear({ empresa, pedido });
     },
   };
+}
+
+// ---- Avisos de pago (webhook de Mercado Pago) ----
+
+// Pregunta a Mercado Pago cómo está un pago. POR QUÉ preguntar en vez de creerle
+// al aviso: el aviso solo dice "mirá el pago 123". El estado real (aprobado o
+// no, el monto, el pedido) lo sacamos de Mercado Pago con el token del negocio,
+// así nadie puede inventar un "pago aprobado" mandándonos un aviso falso.
+export async function consultarPagoMercadoPago({ empresa, id }) {
+  const respuesta = await fetch(`${API}/v1/payments/${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${tokenDe(empresa)}` } });
+  if (!respuesta.ok) throw new Error(`Mercado Pago respondió ${respuesta.status} al consultar el pago ${id}: ${(await respuesta.text()).slice(0, 200)}`);
+  const p = await respuesta.json();
+  return {
+    id: String(p.id),
+    estado: p.status, // "approved" = aprobado
+    pedido: p.external_reference ?? p.metadata?.pedido ?? "",
+    monto: Number(p.transaction_amount) || 0,
+    datos: p.metadata ?? {},
+  };
+}
+
+// Mercado Pago firma cada aviso con la "clave secreta" de webhooks de tu app.
+// Header x-signature: "ts=1704908010,v1=618c85345248dd820d5fd456117c2ab2ef8eda45a0282ff693eac24131a5e839"
+// Lo firmado es "id:<data.id>;request-id:<x-request-id>;ts:<ts>;".
+export function firmaMercadoPagoValida({ dataId, requestId, firma, secreto }) {
+  if (!secreto || typeof firma !== "string") return false;
+  const partes = Object.fromEntries(firma.split(",").map((p) => p.trim().split("=", 2)));
+  if (!partes.ts || !partes.v1) return false;
+  const id = /^[a-z0-9]+$/i.test(String(dataId ?? "")) ? String(dataId).toLowerCase() : String(dataId ?? "");
+  let firmado = "";
+  if (id) firmado += `id:${id};`;
+  if (requestId) firmado += `request-id:${requestId};`;
+  firmado += `ts:${partes.ts};`;
+  const esperada = crypto.createHmac("sha256", secreto).update(firmado).digest();
+  const recibida = Buffer.from(partes.v1, "hex");
+  return recibida.length === esperada.length && crypto.timingSafeEqual(recibida, esperada);
 }

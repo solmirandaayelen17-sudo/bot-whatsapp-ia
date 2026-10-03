@@ -7,7 +7,7 @@ Un asistente que atiende el WhatsApp de **varios negocios a la vez**. Contesta c
 ![Gemini](https://img.shields.io/badge/IA-Gemini-8E75B2?logo=googlegemini&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Datos-Google%20Sheets-34A853?logo=googlesheets&logoColor=white)
 ![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Pruebas](https://img.shields.io/badge/pruebas-70%20OK-brightgreen)
+![Pruebas](https://img.shields.io/badge/pruebas-81%20OK-brightgreen)
 
 ## Demo
 
@@ -33,7 +33,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 - **El dueño maneja todo desde una planilla.** Cambia un precio en Google Sheets desde el celular y el bot lo usa al instante.
 - **Seguridad desde el principio.** Verifica la firma de cada aviso de WhatsApp, guarda las claves fuera del código y no deja que un cliente meta fórmulas en la planilla.
 - **Tolerante a fallas.** Si Gemini está saturado, responde un modelo de respaldo. Si todo falla, el cliente recibe un mensaje amable y `npm run diagnostico` dice qué pasó.
-- **70 pruebas automáticas** con una IA simulada, así no se gasta cuota.
+- **81 pruebas automáticas** con una IA simulada, así no se gasta cuota.
 
 ## Tecnologías
 
@@ -53,7 +53,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 - **Funciona de punta a punta** en el chat de prueba, leyendo y escribiendo en Google Sheets.
 - **El webhook de WhatsApp está probado** con un simulador que manda los mensajes con el formato y la firma de Meta (`npm run simulador`).
-- **Cobra con link de Mercado Pago** al confirmar el pedido (probado en modo prueba, sin plata real).
+- **Cobra con link de Mercado Pago** al confirmar el pedido (probado en modo prueba, sin plata real). Con `URL_PUBLICA`, Mercado Pago avisa cada pago aprobado: se anota solo en la planilla y el cliente recibe la confirmación por WhatsApp.
 - **Da turnos con Google Calendar** (probado con pruebas automáticas y con una agenda de prueba en la demo; falta probarlo con el calendario de un cliente).
 - **Entiende notas de voz:** descarga el audio de WhatsApp, lo transcribe con Gemini y responde. En la demo se prueba con el micrófono.
 - **Demo para clientes:** un chat con forma de celular en el navegador, conectado al bot real a través del mismo webhook (`npm run demo`).
@@ -70,7 +70,7 @@ El pedido se hace en dos pasos: primero el bot muestra el total y, **recién cua
 
 A multi-tenant WhatsApp AI assistant for small businesses. A LangChain agent (built on LangGraph) running on Google Gemini answers customers using each business's live Google Sheet (prices, stock), takes orders through a two-step quote → confirm flow that is enforced in code, and hands the conversation off to a human when needed. Adding a new business takes one JSON config file and one spreadsheet, with no code changes.
 
-Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (70 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
+Stack: Node.js, LangChain v1, Google Gemini (with fallback model), Google Sheets API, WhatsApp Cloud API (signed webhooks), Express, Zod and `node:test` (81 tests using a fake LLM). Confirmed orders get a Mercado Pago Checkout Pro payment link built in code from the validated quote (the LLM never sets the amount). Voice notes are downloaded from the WhatsApp media API and transcribed with Gemini's native audio input. Includes a local simulator that sends Meta-formatted, HMAC-signed webhook events to the real endpoint and a browser demo (phone-style chat) built on top of it. The rest of the documentation is in Spanish.
 </details>
 
 ---
@@ -342,7 +342,58 @@ npm run demo -- autolavado-demo
 
 Para publicarla en Railway: un **segundo servicio** del mismo repositorio, con las mismas variables pero `DEMO_EMPRESA=autolavado-demo`. No necesita `GOOGLE_CREDENTIALS_JSON` ni Mercado Pago, porque los datos están en `datos/autolavado-demo`.
 
-Para un autolavado real falta el aviso de pago de Mercado Pago (notificaciones) y mandar los avisos y el balance por WhatsApp. La lógica (precios, caja, avisos, balance) es la misma que usa la demo.
+La lógica (precios, caja, avisos, balance) es la misma que usa el sistema real, que se explica abajo.
+
+### Sistema real del autolavado
+
+Lo mismo que muestra la demo, pero de verdad: con Mercado Pago, la planilla del negocio y WhatsApp.
+
+Para un cliente nuevo, copiá `docs/plantillas/autolavado-cliente.json` a `empresas/` y completá lo que está en MAYÚSCULAS o con XXX (y el `id`, en minúsculas y sin espacios, por ejemplo `autolavado-centro`).
+
+1. **Cliente:** pide fichas al número del negocio, recibe el link y paga.
+2. **Mercado Pago avisa** a `https://<servidor>/webhooks/mercadopago/<id-de-la-empresa>`. El bot consulta el pago con el token del negocio y, si está aprobado:
+   - lo anota en la pestaña **Ventas** de la planilla (una sola vez, aunque Mercado Pago avise varias veces),
+   - le manda al cliente *"¡Pago aprobado! Ya te llevan 3 fichas a la bahía 5"*,
+   - le manda al encargado *"Llevar 3 fichas a la BAHÍA 5 · Pagado ✓"*.
+3. **El dueño le escribe al mismo número del bot:**
+   - foto de una factura → Gemini la lee y la carga en **Gastos**;
+   - *balance* → el balance del día con la alerta;
+   - *gasto trapos 8000* → un gasto sin factura;
+   - cualquier otra cosa → la ayuda.
+4. **A las 22 h** (`fichas.horaBalance`) el dueño recibe el balance solo.
+
+**Qué configurar:**
+
+- En la planilla, dos pestañas con estos encabezados en la fila 1:
+  - **Ventas:** `id, fecha, hora, telefono, cliente, bahia, fichas, total, id_pago`
+  - **Gastos:** `fecha, hora, proveedor, concepto, total, origen`
+  - Para otros negocios que cobran con Mercado Pago, **Pagos:** `fecha, hora, pedido, telefono, cliente, total, id_pago`
+- En el JSON de la empresa, dentro de `fichas`:
+
+  ```json
+  "encargado": "5492975550001",
+  "dueno": "5492975550002",
+  "horaBalance": "22:00",
+  "gastosFijosMensuales": [{ "concepto": "Alquiler", "monto": 1200000 }],
+  "reserva": 2000000
+  ```
+
+- En el servidor del bot: `URL_PUBLICA` (la dirección pública, por ejemplo la de Railway) y, si querés, `MERCADOPAGO_WEBHOOK_SECRET` (la clave secreta de webhooks de la app de Mercado Pago).
+- `npm run diagnostico` revisa las pestañas, los números y `URL_PUBLICA` (paso 8).
+
+**Mensajes al encargado y al dueño:** WhatsApp solo deja mandar mensajes libres a quien escribió en las últimas 24 horas. Hay dos formas de resolverlo:
+
+- **Sin trámite:** el encargado le manda *"hola"* al bot al empezar el turno y el dueño escribe *balance* una vez al día. Con eso quedan habilitados por 24 h.
+- **Con plantillas de Meta** (recomendado): se crean dos plantillas de categoría *Utilidad* en el administrador de WhatsApp y se cargan en `fichas.plantillas`:
+
+  ```json
+  "plantillas": { "aviso": "aviso_fichas", "balance": "balance_diario", "idioma": "es_AR" }
+  ```
+
+  - `aviso_fichas`: *🧽 Llevar {{1}} a la BAHÍA {{2}}. Pagado ✓ {{3}} · Pedido {{4}}*
+  - `balance_diario`: *📊 Balance de hoy: entraron {{1}} con {{2}} autos. Resultado del día: {{3}}. Respondé "balance" para ver el detalle.*
+
+  Meta cobra cada plantilla enviada (son baratas, de tipo utilidad).
 
 ### Agenda de turnos (Google Calendar)
 
@@ -401,7 +452,7 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 | **Recortar el historial largo** | Las conversaciones muy largas gastan más cuota de IA. |
 | **Cancelar o cambiar turnos desde el chat** | Hoy el bot da turnos, pero para cancelar o cambiar deriva a una persona. |
 | **Reactivar el bot cuando el dueño responde** | Con la coexistencia, Meta avisa cuando el dueño escribe desde su celular. Se puede usar para pausar o reanudar solo. |
-| **Avisar cuando se pagó** (notificaciones de Mercado Pago) | Hoy el link se manda y queda en la planilla, pero el pago se controla en la cuenta de Mercado Pago. Con las notificaciones, el pedido pasaría solo a "pagado". |
+| **Probar el sistema real del autolavado con un negocio** | Está probado con pruebas automáticas (Mercado Pago y WhatsApp simulados). Falta un piloto con un autolavado de verdad y las plantillas aprobadas por Meta. |
 | **El bot de WhatsApp en la nube** | La demo ya se publica en Railway. Falta sumar el servidor del bot (`npm run servidor`) como otro servicio, cuando Meta habilite el número de un cliente. |
 | **Alta de clientes con Embedded Signup** | Registrándose como Tech Provider, cada negocio conecta su número con un botón. |
 
