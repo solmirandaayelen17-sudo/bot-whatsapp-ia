@@ -64,6 +64,8 @@ export function extraerMensajes(aviso) {
           texto,
           audio: m.type === "audio" && m.audio?.id ? { id: m.audio.id, mimeType: m.audio.mime_type } : null,
           imagen: m.type === "image" && m.image?.id ? { id: m.image.id, mimeType: m.image.mime_type } : null,
+          // Si la persona "deslizó para responder" un mensaje nuestro, acá viene el id de ese mensaje.
+          respondeA: m.context?.id ?? null,
         });
       }
     }
@@ -98,6 +100,17 @@ export async function enviarTextoWhatsApp({ empresa, para, texto }) {
   if (!respuesta.ok) {
     throw new Error(`WhatsApp respondió ${respuesta.status}: ${await respuesta.text()}`);
   }
+  // Devuelve el id del mensaje enviado. POR QUÉ: si la dueña "desliza para
+  // responder" un aviso, Meta nos manda ese id y así sabemos de qué cliente habla.
+  return idDelEnviado(respuesta);
+}
+
+async function idDelEnviado(respuesta) {
+  try {
+    return (await respuesta.json())?.messages?.[0]?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // Mensaje con PLANTILLA aprobada por Meta. Hace falta para escribirle a alguien
@@ -122,6 +135,7 @@ export async function enviarPlantillaWhatsApp({ empresa, para, nombre, idioma = 
     }),
   });
   if (!respuesta.ok) throw new Error(`WhatsApp respondió ${respuesta.status} a la plantilla ${nombre}: ${await respuesta.text()}`);
+  return idDelEnviado(respuesta);
 }
 
 // Los audios no vienen en el aviso: Meta manda un id. Con ese id se pide la
@@ -149,6 +163,9 @@ export function crearRouterWhatsApp({
   // atender(empresa, mensaje, responder): para mensajes especiales (el dueño o el
   // encargado de un autolavado). Si devuelve true, el mensaje ya se atendió.
   atender = null,
+  // enPausa(empresa, mensaje, texto): el bot no contestó porque la charla la
+  // tiene una persona (derivada). Sirve para pasarle a esa persona lo que escribió el cliente.
+  enPausa = null,
   verifyToken,
   appSecret,
 }) {
@@ -229,6 +246,7 @@ export function crearRouterWhatsApp({
       transcripcion: transcripcion?.texto ?? null,
     });
     if (respuesta) await responder(respuesta);
+    else if (enPausa) await enPausa(empresa, m, texto);
   }
 
   // Descarga y transcribe un audio. Devuelve { texto } o, si no se pudo,

@@ -61,6 +61,7 @@ export function crearProcesador({
   cobros, // para reemplazar Mercado Pago en las pruebas
   crearAgenda = crearAgendaDeEmpresa, // dónde se guardan los turnos (se reemplaza en la demo pública y en las pruebas)
   libroFichas = crearLibroDeFichas(), // la caja de los autolavados (ventas de fichas)
+  alDerivar = null, // avisa a la persona que atiende las charlas derivadas (nucleo/derivaciones.js)
 }) {
   // Links de pago creados en el turno actual de cada charla. POR QUÉ: la IA a
   // veces resume o corta un link largo. Si en su respuesta no está el link
@@ -95,6 +96,7 @@ export function crearProcesador({
           enlaces,
           agenda: crearAgenda(empresa),
           libroFichas,
+          alDerivar,
         })
       );
     }

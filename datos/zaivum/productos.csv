@@ -1,0 +1,3 @@
+codigo,nombre,categoria,precio,stock,descripcion
+BOT-INST,Bot de WhatsApp con IA (instalación),bot de whatsapp,"$ 300.000",,"Pago único, precio de lanzamiento. Sol lo arma con los datos del negocio (precios, horarios, preguntas frecuentes) y lo deja funcionando en el WhatsApp del negocio. Responde las 24 horas, también audios."
+BOT-MES,Bot de WhatsApp con IA (abono mensual),bot de whatsapp,"$ 30.000",,"Por mes, precio de lanzamiento. Incluye mantenimiento, cambios de precios y datos, y soporte."
