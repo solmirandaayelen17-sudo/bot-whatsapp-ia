@@ -42,7 +42,8 @@ function nuevoIdPedido() {
 // enlaces: donde se guarda el link para que el procesador se asegure de que llegue al cliente.
 // agenda: dónde se guardan los turnos (Google Calendar o en memoria), si la empresa toma turnos.
 // libroFichas: la caja del autolavado (ventas de fichas), si la empresa vende fichas.
-export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros = { crearLink: crearLinkMercadoPago }, enlaces = null, agenda = null, libroFichas = null }) {
+// alDerivar: avisa a la persona que atiende las charlas derivadas (ver nucleo/derivaciones.js).
+export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros = { crearLink: crearLinkMercadoPago }, enlaces = null, agenda = null, libroFichas = null, alDerivar = null }) {
   const cobraConMercadoPago = empresa.herramientas.includes("cobrar_mercado_pago");
 
   const buscarProductos = tool(
@@ -234,6 +235,12 @@ export function crearHerramientas({ empresa, fuente, pausas, pendientes, cobros 
       // El bot deja de contestar en ESTA conversación por un rato, para que la
       // persona del negocio responda sin que el bot se meta en el medio.
       if (ctx.hiloId) pausas.pausar(ctx.hiloId, empresa.derivacion.pausaMinutos);
+      // Si falla el aviso, la derivación igual queda anotada en la planilla.
+      try {
+        await alDerivar?.(empresa, { telefono: ctx.telefono, nombre: ctx.nombre, motivo, hiloId: ctx.hiloId });
+      } catch (error) {
+        console.error(`[${empresa.id}] No pude avisar la derivación: ${mensajeDeError(error)}`);
+      }
       return JSON.stringify({
         ok: true,
         instruccion: "Listo. Avisale al cliente, en una oración, que una persona del equipo le va a responder por este mismo chat.",

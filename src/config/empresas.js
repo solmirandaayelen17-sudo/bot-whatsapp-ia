@@ -29,6 +29,9 @@ const esquemaEmpresa = z.object({
   nombre: z.string().min(1),
   rubro: z.string().min(1),
   tono: z.string().optional(),
+  // Cómo vende el bot (opcional): frases que se suman a sus instrucciones.
+  // Sirve para que un bot siga una forma de vender (por ejemplo los pilares de venta de Zaivum).
+  comoVender: z.array(z.string().min(1)).optional(),
   negocio: z.object({
     direccion: z.string().optional(),
     horarios: z.string().min(1),
@@ -41,6 +44,9 @@ const esquemaEmpresa = z.object({
   whatsapp: z
     .object({
       phoneNumberId: z.string().optional(),
+      // O el NOMBRE de una variable del .env (o de Railway) que tiene el phoneNumberId.
+      // POR QUÉ: así el número se cambia desde Railway, sin tocar el código.
+      phoneNumberIdEnv: z.string().optional(),
       tokenEnv: z.string().optional(),
     })
     .optional(),
@@ -86,7 +92,20 @@ const esquemaEmpresa = z.object({
     .refine((f) => f.precios.some((p) => p.cantidad === 1), { message: "tiene que haber un precio para 1 ficha suelta" })
     .optional(),
   mercadoPago: z.object({ tokenEnv: z.string().optional(), webhookSecretEnv: z.string().optional() }).optional(),
-  derivacion: z.object({ pausaMinutos: z.number().int().positive() }).optional(),
+  // DERIVACIÓN a una persona. avisarA: el WhatsApp (solo números) de quien atiende
+  // las charlas derivadas; le llega un aviso y le puede contestar al cliente a
+  // través del bot. avisarAEnv: lo mismo, pero leído de una variable (para no
+  // dejar un número personal escrito en GitHub). plantilla: plantilla aprobada por
+  // Meta para el aviso, por si esa persona no le escribió al bot en las últimas 24 h.
+  derivacion: z
+    .object({
+      pausaMinutos: z.number().int().positive().optional(),
+      avisarA: z.string().regex(/^\d{8,15}$/, "el número va solo con dígitos y código de país (ej: 5492975551234)").optional(),
+      avisarAEnv: z.string().optional(),
+      plantilla: z.string().optional(),
+      idioma: z.string().optional(),
+    })
+    .optional(),
 });
 
 // Completa los valores por defecto para que el resto del código no tenga que
@@ -95,13 +114,14 @@ function conValoresPorDefecto(e) {
   return {
     ...e,
     tono: e.tono ?? "cercano y claro, en español rioplatense (voseo)",
+    comoVender: e.comoVender ?? [],
     negocio: {
       ...e.negocio,
       formasDePago: e.negocio.formasDePago ?? [],
       preguntasFrecuentes: e.negocio.preguntasFrecuentes ?? [],
     },
     whatsapp: {
-      phoneNumberId: e.whatsapp?.phoneNumberId ?? "",
+      phoneNumberId: e.whatsapp?.phoneNumberId || (e.whatsapp?.phoneNumberIdEnv && process.env[e.whatsapp.phoneNumberIdEnv]) || "",
       tokenEnv: e.whatsapp?.tokenEnv ?? "WHATSAPP_TOKEN",
     },
     herramientas: e.herramientas ?? [...HERRAMIENTAS_POR_DEFECTO],
@@ -109,7 +129,11 @@ function conValoresPorDefecto(e) {
       tokenEnv: e.mercadoPago?.tokenEnv ?? "MERCADOPAGO_ACCESS_TOKEN",
       webhookSecretEnv: e.mercadoPago?.webhookSecretEnv ?? "MERCADOPAGO_WEBHOOK_SECRET",
     },
-    derivacion: { pausaMinutos: e.derivacion?.pausaMinutos ?? 120 },
+    derivacion: {
+      ...e.derivacion,
+      pausaMinutos: e.derivacion?.pausaMinutos ?? 120,
+      avisarA: e.derivacion?.avisarA || (e.derivacion?.avisarAEnv && process.env[e.derivacion.avisarAEnv]?.replace(/\D/g, "")) || "",
+    },
     fichas: e.fichas && { maximoPorCompra: 10, gastosFijosMensuales: [], reserva: 0, horaBalance: "22:00", ...e.fichas },
     agenda: e.agenda && {
       ...e.agenda,

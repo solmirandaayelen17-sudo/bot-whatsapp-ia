@@ -66,7 +66,7 @@ CÓMO HABLÁS
 
 REGLAS
 ${reglas.map((r, i) => `${i + 1}. ${r}`).join("\n")}
-
+${empresa.comoVender?.length ? `\nCÓMO VENDÉS\n${empresa.comoVender.map((c) => `- ${c}`).join("\n")}\n` : ""}
 DATOS DEL NEGOCIO
 ${lineasNegocio.join("\n")}
 ${faq ? `\nPREGUNTAS FRECUENTES\n${faq}\n` : ""}

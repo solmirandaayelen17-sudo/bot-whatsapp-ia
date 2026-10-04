@@ -422,6 +422,22 @@ Para negocios que trabajan con turnos (peluquerías, estética, consultorios). E
 
 Cómo funciona: cualquier evento del calendario cuenta como horario ocupado, así el dueño puede anotar a mano los turnos que da por teléfono y el bot no los pisa. Si dos clientes piden el mismo horario a la vez, solo uno se lo queda. En la demo pública los turnos van a una agenda de prueba en memoria (`"tipo": "memoria"`), así nadie toca un calendario real.
 
+### El bot propio de Zaivum (atender sin estar)
+
+`empresas/zaivum.json` es el bot que atiende el WhatsApp de Zaivum: vende siguiendo los pilares de venta (escucha primero, recomienda una sola cosa, saca dudas antes del precio, no insiste) y los precios salen de `datos/zaivum/productos.csv`, nunca de la IA. Cuando alguien quiere contratar, toma sus datos y deriva la charla.
+
+**Derivaciones a tu WhatsApp.** Sirve para cualquier empresa: si su JSON tiene `derivacion.avisarA` (o `avisarAEnv`, el nombre de una variable con el número), cuando el bot deriva una charla:
+
+1. A ese WhatsApp le llega un aviso con el resumen y un código (los últimos 4 números del cliente, ej. `#1234`).
+2. Para contestarle al cliente, se desliza el aviso y se responde, o se escribe `#1234 tu mensaje` **al número del bot**. El cliente lo recibe desde el número del negocio.
+3. Lo que el cliente escribe mientras tanto también llega, como `💬 #1234 Juli: ...`.
+4. `#1234 listo` termina: el bot vuelve a atender a ese cliente.
+5. Cualquier otro mensaje al bot desde ese número muestra las charlas abiertas.
+
+WhatsApp solo deja mandar texto libre a quien escribió en las últimas 24 h. Para que los avisos lleguen siempre, creá en Meta una plantilla de **utilidad** con 3 variables (cliente, motivo, código) y poné su nombre en `derivacion.plantilla`. Sin plantilla, los avisos llegan si le escribiste al bot en las últimas 24 h.
+
+**En Railway:** otro servicio del mismo repo con el comando `npm run servidor` y estas variables: `GOOGLE_API_KEY`, `WHATSAPP_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `ZAIVUM_PHONE_NUMBER_ID` (el identificador del número en Meta) y `ZAIVUM_AVISOS_A` (tu WhatsApp personal, solo números). Las dos últimas van como variables, no en el JSON, para que tu número personal no quede escrito en GitHub. En Meta, el webhook es `https://<el-servicio>.up.railway.app/webhook`.
+
 ## Cómo adaptarlo a una empresa nueva
 
 1. Copiá `empresas/gomeria-demo.json` a `empresas/<id-del-cliente>.json`.
@@ -453,7 +469,8 @@ Si falta algún dato obligatorio en el JSON, el programa no arranca y te dice ex
 | **Cancelar o cambiar turnos desde el chat** | Hoy el bot da turnos, pero para cancelar o cambiar deriva a una persona. |
 | **Reactivar el bot cuando el dueño responde** | Con la coexistencia, Meta avisa cuando el dueño escribe desde su celular. Se puede usar para pausar o reanudar solo. |
 | **Probar el sistema real del autolavado con un negocio** | Está probado con pruebas automáticas (Mercado Pago y WhatsApp simulados). Falta un piloto con un autolavado de verdad y las plantillas aprobadas por Meta. |
-| **El bot de WhatsApp en la nube** | La demo ya se publica en Railway. Falta sumar el servidor del bot (`npm run servidor`) como otro servicio, cuando Meta habilite el número de un cliente. |
+| **El bot de WhatsApp en la nube** | La demo ya se publica en Railway. Falta sumar el servidor del bot (`npm run servidor`) como otro servicio; el primero va a ser el bot propio de Zaivum. |
+| **Guardar las charlas derivadas** | Hoy viven en la RAM: si el servidor se reinicia, para contestar hay que usar el número completo del cliente (`#5492971234567 mensaje`). |
 | **Alta de clientes con Embedded Signup** | Registrándose como Tech Provider, cada negocio conecta su número con un botón. |
 
 ---
